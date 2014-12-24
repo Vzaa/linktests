@@ -21,6 +21,21 @@ class ApNode(object):
         self.radio_enabled = True
         self.macs = {}
 
+    def ap_cfg(self, channel, bw, chains, band=5):
+        ifname = self.ifs[band]
+        cmd_list = []
+        cmd_list.append(wl_cmd(ifname, 'chanspec ' + str(channel) + '/' + str(bw)))
+        if chains == '3x3':
+            cmd_list.append(wl_cmd(ifname, 'rxchain 7'))
+            cmd_list.append(wl_cmd(ifname, 'txchain 7'))
+        elif chains == '2x2':
+            cmd_list.append(wl_cmd(ifname, 'rxchain 3'))
+            cmd_list.append(wl_cmd(ifname, 'txchain 3'))
+        elif chains == '1x1':
+            cmd_list.append(wl_cmd(ifname, 'rxchain 1'))
+            cmd_list.append(wl_cmd(ifname, 'txchain 1'))
+        return cmd_list
+        
     def run_command(self, command_list):
         return do_remote(self.hostname, command_list, self.username, self.passwd)
 
@@ -72,20 +87,34 @@ class ApNode(object):
         self.run_command(cmd_list)
         self.radio_enabled = False
 
-    def set_wds_link(self, dest_mac, band=5):
+    def set_wds_link(self, dest_mac, extra_cmds=None, band=5):
         ifname = self.ifs[band]
         cmd_list = []
         cmd_list.append(wl_cmd(ifname, 'down'))
         cmd_list.append(wl_cmd(ifname, 'ssid "kedi"'))
-        cmd_list.append(wl_cmd(ifname, 'chanspec 36/80'))
+
+        if band == 5:
+            cmd_list.append(wl_cmd(ifname, 'chanspec 36/80'))
+        else:
+            cmd_list.append(wl_cmd(ifname, 'chanspec 1'))
+
+        if extra_cmds is not None:
+            cmd_list = cmd_list + extra_cmds
+
         cmd_list.append(wl_cmd(ifname, 'wdswsec 0'))
         cmd_list.append(wl_cmd(ifname, 'wdswsec_enable 0'))
         cmd_list.append(wl_cmd(ifname, 'lazywds 0'))
         cmd_list.append(wl_cmd(ifname, 'wdstimeout 1'))
         cmd_list.append(wl_cmd(ifname, 'wds ' + dest_mac))
         cmd_list.append(wl_cmd(ifname, 'up'))
-        cmd_list.append('ifconfig wds1.1 up')
-        cmd_list.append('brctl addif br0.1 wds1.1')
+
+        if band == 5:
+            cmd_list.append('ifconfig wds1.1 up')
+            cmd_list.append('brctl addif br0.1 wds1.1')
+        else:
+            cmd_list.append('ifconfig wds0.1 up')
+            cmd_list.append('brctl addif br0.1 wds0.1')
+
         self.run_command(cmd_list)
 
     def tear_wds_links(self, band=5):

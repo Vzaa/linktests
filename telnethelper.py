@@ -3,20 +3,22 @@
 import pexpect
 
 
-def do_remote(hostname, command, username='root', passwd=''):
+def do_remote(hostname, command_list, username='root', passwd=''):
     c = pexpect.spawn('telnet ' + hostname)
     c.expect('login:')
     c.sendline(username)
-    c.expect('Password:')
-    c.sendline(passwd)
-    c.expect('#')
-    c.sendline(command)
+    if passwd is not None:
+        c.expect('Password:')
+        c.sendline(passwd)
+    for command in command_list:
+        print command
+        c.expect('#')
+        c.sendline(command)
     c.expect('#')
     res = c.before
     c.sendline('exit')
     c.kill(1)
     return res.split('\n')
-
 
 
 def main():

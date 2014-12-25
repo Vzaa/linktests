@@ -1,6 +1,6 @@
 "AP node class"
 
-from telnethelper import do_remote
+from telnethelper import do_remote, do_remote_plc
 
 
 def wl_cmd(ifname, command):
@@ -35,9 +35,22 @@ class ApNode(object):
             cmd_list.append(wl_cmd(ifname, 'rxchain 1'))
             cmd_list.append(wl_cmd(ifname, 'txchain 1'))
         return cmd_list
-        
+
     def run_command(self, command_list):
         return do_remote(self.hostname, command_list, self.username, self.passwd)
+
+    def run_command_plc(self, command_list):
+        return do_remote_plc(self.plchostname, command_list, 'admin', 'admin')
+
+    def plc_disable(self):
+        cmd_list = []
+        cmd_list.append('brctl delif br0 plc0')
+        self.run_command_plc(cmd_list)
+
+    def plc_enable(self):
+        cmd_list = []
+        cmd_list.append('brctl addif br0 plc0')
+        self.run_command_plc(cmd_list)
 
     def ap_mode(self, band=5):
         ifname = self.ifs[band]

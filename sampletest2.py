@@ -7,11 +7,11 @@ from hp1910 import Switch1910
 import pyperf.pyperfapi as perf
 
 
-SOURCEIP = '192.168.2.100'
+SOURCEIP = '192.168.2.201'
 SINKIP = '192.168.2.202'
 SINKPORT = 10
 TIMESTAMP = time.strftime("%d_%m_%y_%I_%M_%S")
-TARGET_DIR = '/tmp/logs/'
+TARGET_DIR = '~/logs/'
 
 
 def run_udp(cli_ip, serv_ip, port=4444, duration=5, bw=500, band=5, ap_src=None, ap_sink=None, is_plc=False):

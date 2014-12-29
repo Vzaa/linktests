@@ -104,6 +104,7 @@ def run_test(sw, ap1, ap2, band=5, channel=36, bw=80, chains='3x3', use_apsta=Fa
     sw.add_ports_to_vlan(4, [SINKPORT, ap2.switchport])
 
     time.sleep(2)
+    print 'ping tests...'
     ap1.ping(ap2.hostname)
     ap1.ping(SINKIP)
 
@@ -182,6 +183,7 @@ def run_test_plc(sw, ap1, ap2):
     sw.add_ports_to_vlan(4, [SINKPORT, ap2.switchport])
 
     time.sleep(2)
+    print 'ping tests...'
     ap1.ping(ap2.plchostname)
     ap1.ping(ap2.hostname)
     ap1.ping(SINKIP)

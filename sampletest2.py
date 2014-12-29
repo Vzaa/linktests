@@ -113,10 +113,11 @@ def run_test(sw, ap1, ap2, band=5, channel=36, bw=80, chains='3x3', use_apsta=Fa
         print "can't reach the sink, skip test"
     else:
         while True:
-            cli_log, serv_log, dev_log = run_udp(SOURCEIP, SINKIP, band=band, ap_src=ap1, ap_sink=ap2)
-        except requests.Timeout:
-            continue
-        break
+            try:
+                cli_log, serv_log, dev_log = run_udp(SOURCEIP, SINKIP, band=band, ap_src=ap1, ap_sink=ap2)
+            except requests.Timeout:
+                continue
+            break
 
     with open(filename_base + '_serv.log', 'w') as writer:
         for item in serv_log:
@@ -192,10 +193,11 @@ def run_test_plc(sw, ap1, ap2):
         print "can't reach the sink, skip test"
     else:
         while True:
-            cli_log, serv_log, dev_log = run_udp(SOURCEIP, SINKIP, ap_src=ap1, is_plc=True)
-        except requests.Timeout:
-            continue
-        break
+            try:
+                cli_log, serv_log, dev_log = run_udp(SOURCEIP, SINKIP, ap_src=ap1, is_plc=True)
+            except requests.Timeout:
+                continue
+            break
 
     with open(filename_base + '_serv.log', 'w') as writer:
         for item in serv_log:

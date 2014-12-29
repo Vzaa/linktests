@@ -224,6 +224,7 @@ def run_test_plc(sw, ap1, ap2):
 
 
 def main():
+    os.system('mkdir ' + TARGET_DIR)
     sw = Switch1910('192.168.2.200', 'admin', 'admin')
     sw.add_ports_to_vlan(3, range(3,17))
     #sw.add_ports_to_vlan(2, [13])

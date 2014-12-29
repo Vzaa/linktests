@@ -1,4 +1,4 @@
-"telnet helper with pexpect"
+"HP1910 switch port control"
 from __future__ import unicode_literals
 import sys
 import pexpect
@@ -46,12 +46,13 @@ class Switch1910(object):
 
 
 def main():
-    sw = Switch1910(IPADDR, 'admin', 'admin')
+    pass
+    #sw = Switch1910(IPADDR, 'admin', 'admin')
     #sw.add_ports_to_vlan(1, [2, 3, 4, 5, 6])
-    sw.add_ports_to_vlan(3, range(2, 21))
+    #sw.add_ports_to_vlan(3, range(2, 21))
     #sw.add_ports_to_vlan(2, [15])
     #sw.interact()
-    sw.close()
+    #sw.close()
 
 if __name__ == '__main__':
     main()

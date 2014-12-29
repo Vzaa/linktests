@@ -1,6 +1,7 @@
 import os
 import time
 import pexpect
+import requests
 from apnode import ApNode
 from hp1910 import Switch1910
 import pyperf.pyperfapi as perf
@@ -16,13 +17,25 @@ TARGET_DIR = '/tmp/logs/'
 def run_udp(cli_ip, serv_ip, port=4444, duration=5, bw=500, band=5, ap_src=None, ap_sink=None, is_plc=False):
     dev_log = []
     if is_plc and ap_src is not None:
-        pass
-        #dev_log += ap_src.get_plc_info()
+        dev_log += ap_src.get_plc_info()
         #result = []
+        pass
     print 'start server'
-    serv_id = perf.udp_server_start(serv_ip, port)
+    while True:
+        try:
+            perf.stop(serv_ip, port, -1)
+            serv_id = perf.udp_server_start(serv_ip, port)
+        except requests.Timeout:
+            continue
+        break
     print 'start client'
-    cli_id = perf.udp_client_start(cli_ip, port, serv_ip, duration, bw)
+    while True:
+        try:
+            perf.stop(cli_ip, port, -1)
+            cli_id = perf.udp_client_start(cli_ip, port, serv_ip, duration, bw)
+        except requests.Timeout:
+            continue
+        break
 
     while True:
         cli_info = perf.get_info(cli_ip, port, cli_id)
@@ -56,13 +69,11 @@ def run_test(sw, ap1, ap2, band=5, channel=36, bw=80, chains='3x3', use_apsta=Fa
     sw.add_ports_to_vlan(4, [ap2.switchport, SINKPORT])
 
     sw.add_ports_to_vlan(2, [ap1.switchport])
-    ap1.learn_macs()
     ap1.plc_disable()
     ap1.enable_radio(band=band)
     sw.add_ports_to_vlan(3, [ap1.switchport])
 
     sw.add_ports_to_vlan(2, [ap2.switchport])
-    ap2.learn_macs()
     ap2.plc_disable()
     ap2.enable_radio(band=band)
     sw.add_ports_to_vlan(4, [ap2.switchport])
@@ -141,14 +152,12 @@ def run_test_plc(sw, ap1, ap2):
     sw.add_ports_to_vlan(4, [ap2.switchport, SINKPORT])
 
     sw.add_ports_to_vlan(2, [ap1.switchport])
-    ap1.learn_macs()
     ap1.plc_enable()
     ap1.disable_radio(band=2)
     ap1.disable_radio(band=5)
     sw.add_ports_to_vlan(3, [ap1.switchport])
 
     sw.add_ports_to_vlan(2, [ap2.switchport])
-    ap2.learn_macs()
     ap2.plc_enable()
     ap2.disable_radio(band=2)
     ap2.disable_radio(band=5)
@@ -168,6 +177,7 @@ def run_test_plc(sw, ap1, ap2):
     sw.add_ports_to_vlan(4, [SINKPORT, ap2.switchport])
 
     time.sleep(2)
+    ap1.ping(ap2.plchostname)
     ap1.ping(ap2.hostname)
     ap1.ping(SINKIP)
 
@@ -229,6 +239,9 @@ def main():
     chain_list_2g = ['2x2', '1x1']
     bw_list_2g = [20, 40]
 
+    #sw.add_ports_to_vlan(2, [ap_list[0].switchport])
+    #quit()
+
     #chain_list_5g = ['3x3']
     #bw_list_5g = [80]
 
@@ -239,10 +252,12 @@ def main():
     #run_test_plc(sw, ap1, ap2)
     #return 
 
+    print 'Disable radios and plc interfaces'
     for ap in ap_list:
         while True:
             try:
                 sw.add_ports_to_vlan(2, [ap.switchport])
+                ap.learn_macs()
                 ap.plc_disable()
                 ap.disable_radio(band=2)
                 ap.disable_radio(band=5)
@@ -251,6 +266,10 @@ def main():
                 sw.add_ports_to_vlan(3, [ap.switchport])
                 break
             except pexpect.EOF:
+                print 'Try again...'
+                pass
+            except pexpect.TIMEOUT:
+                print 'Try again...'
                 pass
 
 
@@ -259,39 +278,45 @@ def main():
             if ap1 is ap2:
                 continue
 
-            print 'plc'
+            print 'Running plc test'
             while True:
                 try:
                     run_test_plc(sw, ap1, ap2)
                     break
+                except pexpect.EOF:
+                    print 'Try again...'
+                    pass
                 except pexpect.TIMEOUT:
-                    print 'timeout! try again...'
+                    print 'Try again...'
+                    pass
 
             for chain in chain_list_5g:
                 for bw in bw_list_5g:
-                    print '{} {} {}'.format(5, chain, bw)
+                    print 'Wifi {} {} {}'.format(5, chain, bw)
                     while True:
                         try:
                             run_test(sw, ap1, ap2, band=5, chains=chain, channel=36, bw=bw)
                             break
+                        except pexpect.EOF:
+                            print 'Try again...'
+                            pass
                         except pexpect.TIMEOUT:
-                            print 'timeout! try again...'
-
-
+                            print 'Try again...'
+                            pass
 
             for chain in chain_list_2g:
                 for bw in bw_list_2g:
-                    print '{} {} {}'.format(2, chain, bw)
+                    print 'Wifi {} {} {}'.format(2, chain, bw)
                     while True:
                         try:
                             run_test(sw, ap1, ap2, band=2, chains=chain, channel=6, bw=bw, use_apsta=True)
                             break
+                        except pexpect.EOF:
+                            print 'Try again...'
+                            pass
                         except pexpect.TIMEOUT:
-                            print 'timeout! try again...'
-
-
-
-    #run_test(sw, ap2, ap1)
+                            print 'Try again...'
+                            pass
 
 
 if __name__ == '__main__':

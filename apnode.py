@@ -180,16 +180,17 @@ class ApNode(object):
 
     def get_plc_info(self):
         cmd_list = []
-        cmd_list.append('homeplugctl assocdevices')
+        #cmd_list.append('homeplugctl assocdevices')
+        cmd_list.append('homeplugctl status')
         lines = self.run_command_plc(cmd_list)
         return lines
 
 
 def main():
-    asd = ApNode('192.168.2.5', '', 2, if2g='wl0', if5g='wl0')
+    #asd = ApNode('192.168.2.5', '', 2, if2g='wl0', if5g='wl0')
     #asd.set_ssid('potato', band=2)
     #asd.set_ssid('kereviz', band=2)
-    print asd.macs
+    #print asd.macs
     pass
 
 if __name__ == '__main__':

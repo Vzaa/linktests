@@ -180,7 +180,7 @@ class ApNode(object):
 
     def get_plc_info(self):
         cmd_list = []
-        #cmd_list.append('homeplugctl assocdevices')
+        cmd_list.append('homeplugctl assocdevices')
         cmd_list.append('homeplugctl status')
         lines = self.run_command_plc(cmd_list)
         return lines

@@ -118,6 +118,8 @@ def run_test(sw, ap1, ap2, band=5, channel=36, bw=80, chains='3x3', use_apsta=Fa
                 cli_log, serv_log, dev_log = run_udp(SOURCEIP, SINKIP, band=band, ap_src=ap1, ap_sink=ap2)
             except requests.Timeout:
                 continue
+            except pexpect.TIMEOUT:
+                break
             break
 
     with open(filename_base + '_serv.log', 'w') as writer:
@@ -199,6 +201,8 @@ def run_test_plc(sw, ap1, ap2):
                 cli_log, serv_log, dev_log = run_udp(SOURCEIP, SINKIP, ap_src=ap1, is_plc=True)
             except requests.Timeout:
                 continue
+            except pexpect.TIMEOUT:
+                break
             break
 
     with open(filename_base + '_serv.log', 'w') as writer:

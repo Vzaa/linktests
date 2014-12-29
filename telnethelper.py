@@ -24,7 +24,7 @@ def do_remote(hostname, command_list, username='root', passwd=''):
 
 def do_remote_plc(hostname, command_list, username='admin', passwd='admin'):
     res = ''
-    c = pexpect.spawn('telnet ' + hostname)
+    c = pexpect.spawn('telnet ' + hostname, timeout=120)
     c.expect('Login:')
     c.sendline(username)
     if passwd is not None:

@@ -4,24 +4,26 @@ import pexpect
 
 
 def do_remote(hostname, command_list, username='root', passwd=''):
+    res = ''
     c = pexpect.spawn('telnet ' + hostname)
     c.expect('login:')
     c.sendline(username)
     if passwd is not None:
         c.expect('Password:')
         c.sendline(passwd)
-    for command in command_list:
-        print command
-        c.expect('#')
-        c.sendline(command)
     c.expect('#')
-    res = c.before
+    for command in command_list:
+        c.sendline(command)
+        c.expect('#')
+        res += c.before
+        print c.before,
     c.sendline('exit')
     c.kill(1)
     return res.split('\n')
 
 
 def do_remote_plc(hostname, command_list, username='admin', passwd='admin'):
+    res = ''
     c = pexpect.spawn('telnet ' + hostname)
     c.expect('Login:')
     c.sendline(username)
@@ -30,12 +32,12 @@ def do_remote_plc(hostname, command_list, username='admin', passwd='admin'):
         c.sendline(passwd)
     c.expect('>')
     c.sendline('sh')
-    for command in command_list:
-        print command
-        c.expect('#')
-        c.sendline(command)
     c.expect('#')
-    res = c.before
+    for command in command_list:
+        c.sendline(command)
+        c.expect('#')
+        res += c.before
+        print c.before,
     c.sendline('exit')
     c.expect('>')
     c.sendline('exit')

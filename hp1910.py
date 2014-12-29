@@ -38,7 +38,7 @@ class Switch1910(object):
         self.c.expect('[HP-vlan' + str(vlan) + ']')
 
         for port in ports:
-            print port
+            print '{} -> {}'.format(port, vlan)
             self.c.sendline('port GigabitEthernet 1/0/' + str(port))
             self.c.expect('[HP-vlan' + str(vlan) + ']')
 

@@ -24,7 +24,12 @@ class ApNode(object):
     def ap_cfg(self, channel, bw, chains, band=5):
         ifname = self.ifs[band]
         cmd_list = []
-        cmd_list.append(wl_cmd(ifname, 'chanspec ' + str(channel) + '/' + str(bw)))
+
+        if band == 5:
+            cmd_list.append(wl_cmd(ifname, 'chanspec ' + str(channel) + '/' + str(bw)))
+        else:
+            cmd_list.append(wl_cmd(ifname, 'chanspec -s 0 -b 2 -c ' + str(channel) + ' -w ' + str(bw)))
+
         if chains == '3x3':
             cmd_list.append(wl_cmd(ifname, 'rxchain 7'))
             cmd_list.append(wl_cmd(ifname, 'txchain 7'))
@@ -44,29 +49,40 @@ class ApNode(object):
 
     def plc_disable(self):
         cmd_list = []
+        cmd_list.append('brctl setageing br0 25')
+        cmd_list.append('ip -s -s neigh flush all')
         cmd_list.append('brctl delif br0 plc0')
         self.run_command_plc(cmd_list)
 
     def plc_enable(self):
         cmd_list = []
+        cmd_list.append('brctl setageing br0 25')
+        cmd_list.append('ip -s -s neigh flush all')
         cmd_list.append('brctl addif br0 plc0')
         self.run_command_plc(cmd_list)
 
-    def ap_mode(self, band=5):
+    def ap_mode(self, extra_cmds=None, band=5):
         ifname = self.ifs[band]
         cmd_list = []
         cmd_list.append(wl_cmd(ifname, 'down'))
         cmd_list.append(wl_cmd(ifname, 'ap 1'))
+
+        if extra_cmds is not None:
+            cmd_list = cmd_list + extra_cmds
+
+        cmd_list.append(wl_cmd(ifname, 'ssid kedi'))
         cmd_list.append(wl_cmd(ifname, 'up'))
         self.run_command(cmd_list)
 
-    def sta_mode(self, ssid, band=5):
+    def sta_mode(self, extra_cmds=None, band=5):
         ifname = self.ifs[band]
         cmd_list = []
         cmd_list.append(wl_cmd(ifname, 'down'))
         cmd_list.append(wl_cmd(ifname, 'ap 0'))
+        if extra_cmds is not None:
+            cmd_list = cmd_list + extra_cmds
         cmd_list.append(wl_cmd(ifname, 'up'))
-        cmd_list.append(wl_cmd(ifname, 'join ' + ssid))
+        cmd_list.append(wl_cmd(ifname, 'join kedi'))
         cmd_list.append(wl_cmd(ifname, 'wet 1'))
         self.run_command(cmd_list)
 
@@ -104,12 +120,8 @@ class ApNode(object):
         ifname = self.ifs[band]
         cmd_list = []
         cmd_list.append(wl_cmd(ifname, 'down'))
+        cmd_list.append(wl_cmd(ifname, 'ap 1'))
         cmd_list.append(wl_cmd(ifname, 'ssid "kedi"'))
-
-        if band == 5:
-            cmd_list.append(wl_cmd(ifname, 'chanspec 36/80'))
-        else:
-            cmd_list.append(wl_cmd(ifname, 'chanspec 1'))
 
         if extra_cmds is not None:
             cmd_list = cmd_list + extra_cmds
@@ -140,8 +152,6 @@ class ApNode(object):
         cmd_list = []
         cmd_list.append('ping ' + ipaddr + ' -c 3')
         output = self.run_command(cmd_list)
-        for line in output:
-            print line
 
     def arp_clean(self):
         cmd_list = []
@@ -159,6 +169,20 @@ class ApNode(object):
         lines = self.run_command(cmd_list)
         mac = lines[-2].strip()
         return mac
+
+    def get_rssi_nrate(self, dest_mac, band=5):
+        ifname = self.ifs[band]
+        cmd_list = []
+        cmd_list.append(wl_cmd(ifname, 'nrate'))
+        cmd_list.append(wl_cmd(ifname, 'rssi ' + dest_mac))
+        lines = self.run_command(cmd_list)
+        return lines
+
+    def get_plc_info(self):
+        cmd_list = []
+        cmd_list.append('homeplugctl assocdevices')
+        lines = self.run_command_plc(cmd_list)
+        return lines
 
 
 def main():

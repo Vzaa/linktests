@@ -1,5 +1,6 @@
 import os
 import time
+import pexpect
 from apnode import ApNode
 from hp1910 import Switch1910
 import pyperf.pyperfapi as perf
@@ -7,10 +8,17 @@ import pyperf.pyperfapi as perf
 
 SOURCEIP = '192.168.2.100'
 SINKIP = '192.168.2.202'
-SINKPORT = 14
+SINKPORT = 10
+TIMESTAMP = time.strftime("%d_%m_%y_%I_%M_%S")
+TARGET_DIR = '/tmp/logs/'
 
 
-def run_udp(cli_ip, serv_ip, port=4444, duration=5, bw=1):
+def run_udp(cli_ip, serv_ip, port=4444, duration=5, bw=500, band=5, ap_src=None, ap_sink=None, is_plc=False):
+    dev_log = []
+    if is_plc and ap_src is not None:
+        pass
+        #dev_log += ap_src.get_plc_info()
+        #result = []
     print 'start server'
     serv_id = perf.udp_server_start(serv_ip, port)
     print 'start client'
@@ -19,7 +27,9 @@ def run_udp(cli_ip, serv_ip, port=4444, duration=5, bw=1):
     while True:
         cli_info = perf.get_info(cli_ip, port, cli_id)
         if cli_info['running']:
-            time.sleep(2)
+            time.sleep(1)
+            if ap_src is not None and ap_sink is not None:
+                dev_log += ap_src.get_rssi_nrate(ap_sink.macs[band], band=band)
             print 'running...'
         else:
             break
@@ -32,13 +42,15 @@ def run_udp(cli_ip, serv_ip, port=4444, duration=5, bw=1):
     print 'server log get'
     serv_log = perf.get_log(serv_ip, port, serv_id)
 
-    for line in cli_log['log']:
-        print line,
-    for line in serv_log['log']:
-        print line,
+    return (cli_log['log'], serv_log['log'], dev_log)
 
 
-def run_test(sw, ap1, ap2, band=5, channel=36, bw=80, chains='3x3'):
+def run_test(sw, ap1, ap2, band=5, channel=36, bw=80, chains='3x3', use_apsta=False):
+    cli_log = []
+    serv_log = []
+    dev_log = []
+    filename_base = '{}_{}_{}_{}g_ch{}_bw{}_{}'.format(TIMESTAMP, ap1.hostname, ap2.hostname, band, channel, bw, chains)
+    filename_base = TARGET_DIR + filename_base
     os.system('arp -d ' + SINKIP)
     sw.add_ports_to_vlan(3, [ap1.switchport])
     sw.add_ports_to_vlan(4, [ap2.switchport, SINKPORT])
@@ -60,45 +72,70 @@ def run_test(sw, ap1, ap2, band=5, channel=36, bw=80, chains='3x3'):
     ap1.arp_clean()
     ap1.tear_wds_links(band=band)
     cfg = ap1.ap_cfg(channel, bw, chains, band=band)
-    ap1.set_wds_link(ap2.macs[band], extra_cmds=cfg, band=band)
+    if not use_apsta:
+        ap1.set_wds_link(ap2.macs[band], extra_cmds=cfg, band=band)
+    else:
+        ap1.ap_mode(extra_cmds=cfg, band=band)
     sw.add_ports_to_vlan(3, [ap1.switchport])
 
     sw.add_ports_to_vlan(2, [ap2.switchport])
     ap2.arp_clean()
     ap2.tear_wds_links(band=band)
     cfg = ap2.ap_cfg(channel, bw, chains, band=band)
-    ap2.set_wds_link(ap1.macs[band], extra_cmds=cfg, band=band)
+    if not use_apsta:
+        ap2.set_wds_link(ap1.macs[band], extra_cmds=cfg, band=band)
+    else:
+        ap2.sta_mode(extra_cmds=cfg, band=band)
     sw.add_ports_to_vlan(4, [ap2.switchport])
 
     # add APs and generators to their respective vlans
     sw.add_ports_to_vlan(2, [ap1.switchport])
     sw.add_ports_to_vlan(4, [SINKPORT, ap2.switchport])
 
-    ap1.ping(ap2.hostname)
+    time.sleep(2)
     ap1.ping(ap2.hostname)
     ap1.ping(SINKIP)
 
     ret = os.system('ping -c 3 ' + SINKIP)
+
     if ret != 0:
         print "can't reach the sink, skip test"
-        return
+    else:
+        cli_log, serv_log, dev_log = run_udp(SOURCEIP, SINKIP, band=band, ap_src=ap1, ap_sink=ap2)
 
-    print "start test"
-    run_udp(SOURCEIP, SINKIP)
+    with open(filename_base + '_serv.log', 'w') as writer:
+        for item in serv_log:
+            writer.write(item.strip() + '\n')
+
+    with open(filename_base + '_cli.log', 'w') as writer:
+        for item in cli_log:
+            writer.write(item.strip() + '\n')
+
+    with open(filename_base + '_dev.log', 'w') as writer:
+        for item in dev_log:
+            writer.write(item.strip() + '\n')
 
     sw.add_ports_to_vlan(2, [ap1.switchport])
-    ap1.tear_wds_links(band=band)
+    ap1.disable_radio(band=2)
+    ap1.disable_radio(band=5)
     sw.add_ports_to_vlan(3, [ap1.switchport])
 
     sw.add_ports_to_vlan(2, [ap2.switchport])
     ap2.tear_wds_links(band=band)
+    ap2.disable_radio(band=2)
+    ap2.disable_radio(band=5)
     sw.add_ports_to_vlan(4, [ap2.switchport])
 
     sw.add_ports_to_vlan(3, [ap1.switchport])
-    sw.add_ports_to_vlan(4, [ap2.switchport, SINKPORT])
+    sw.add_ports_to_vlan(3, [ap2.switchport])
 
 
 def run_test_plc(sw, ap1, ap2):
+    cli_log = []
+    serv_log = []
+    dev_log = []
+    filename_base = '{}_{}_{}_plc'.format(TIMESTAMP, ap1.hostname, ap2.hostname)
+    filename_base = TARGET_DIR + filename_base
     os.system('arp -d ' + SINKIP)
     sw.add_ports_to_vlan(3, [ap1.switchport])
     sw.add_ports_to_vlan(4, [ap2.switchport, SINKPORT])
@@ -130,17 +167,29 @@ def run_test_plc(sw, ap1, ap2):
     sw.add_ports_to_vlan(2, [ap1.switchport])
     sw.add_ports_to_vlan(4, [SINKPORT, ap2.switchport])
 
-    ap1.ping(ap2.hostname)
+    time.sleep(2)
     ap1.ping(ap2.hostname)
     ap1.ping(SINKIP)
 
+    print 'ping sink...'
     ret = os.system('ping -c 3 ' + SINKIP)
+
     if ret != 0:
         print "can't reach the sink, skip test"
-        return
+    else:
+        cli_log, serv_log, dev_log = run_udp(SOURCEIP, SINKIP, ap_src=ap1, is_plc=True)
 
-    print "start test"
-    run_udp(SOURCEIP, SINKIP)
+    with open(filename_base + '_serv.log', 'w') as writer:
+        for item in serv_log:
+            writer.write(item.strip() + '\n')
+
+    with open(filename_base + '_cli.log', 'w') as writer:
+        for item in cli_log:
+            writer.write(item.strip() + '\n')
+
+    with open(filename_base + '_dev.log', 'w') as writer:
+        for item in dev_log:
+            writer.write(item.strip() + '\n')
 
     sw.add_ports_to_vlan(2, [ap1.switchport])
     ap1.plc_disable()
@@ -151,27 +200,97 @@ def run_test_plc(sw, ap1, ap2):
     sw.add_ports_to_vlan(4, [ap2.switchport])
 
     sw.add_ports_to_vlan(3, [ap1.switchport])
-    sw.add_ports_to_vlan(4, [ap2.switchport, SINKPORT])
+    sw.add_ports_to_vlan(3, [ap2.switchport])
 
 
 def main():
     sw = Switch1910('192.168.2.200', 'admin', 'admin')
-    #sw.add_ports_to_vlan(2, [13, 15])
+    sw.add_ports_to_vlan(3, range(3,17))
+    #sw.add_ports_to_vlan(2, [13])
     #sw.add_ports_to_vlan(2, [SINKPORT])
     #quit()
-    ap1 = ApNode(hostname='192.168.2.21', plchostname='192.168.2.31', switchport=15, username='root', passwd=None)
-    ap2 = ApNode(hostname='192.168.2.22', plchostname='192.168.2.32', switchport=13, username='root', passwd=None)
 
-    chain_list = ['2x2', '1x1']
-    bw_list = [20]
+    ap_list = []
+    ap_list.append(ApNode(hostname='192.168.2.21', plchostname='192.168.2.31', switchport=3, username='root', passwd=None))
+    ap_list.append(ApNode(hostname='192.168.2.22', plchostname='192.168.2.32', switchport=4, username='root', passwd=None))
+    ap_list.append(ApNode(hostname='192.168.2.23', plchostname='192.168.2.33', switchport=5, username='root', passwd=None))
+    ap_list.append(ApNode(hostname='192.168.2.24', plchostname='192.168.2.34', switchport=6, username='root', passwd=None))
+    ap_list.append(ApNode(hostname='192.168.2.25', plchostname='192.168.2.35', switchport=7, username='root', passwd=None))
+    ap_list.append(ApNode(hostname='192.168.2.26', plchostname='192.168.2.36', switchport=8, username='root', passwd=None))
+    ap_list.append(ApNode(hostname='192.168.2.27', plchostname='192.168.2.37', switchport=9, username='root', passwd=None))
 
-    run_test_plc(sw, ap1, ap2)
+    #sw.add_ports_to_vlan(4, [ap_list[6].switchport])
+    #sw.add_ports_to_vlan(2, [ap_list[1].switchport])
+    #quit()
 
-    for chain in chain_list:
-        for bw in bw_list:
-            print "{} {}".format(bw, chain)
-            run_test(sw, ap1, ap2, band=2, chains=chain, channel=1, bw=bw)
-            run_test(sw, ap1, ap2, band=5, chains=chain, channel=36, bw=bw)
+    chain_list_5g = ['3x3', '2x2', '1x1']
+    bw_list_5g = [20, 40, 80]
+
+    chain_list_2g = ['2x2', '1x1']
+    bw_list_2g = [20, 40]
+
+    #chain_list_5g = ['3x3']
+    #bw_list_5g = [80]
+
+    #chain_list_2g = ['2x2']
+    #bw_list_2g = [40]
+
+    #run_test(sw, ap2, ap2)
+    #run_test_plc(sw, ap1, ap2)
+    #return 
+
+    for ap in ap_list:
+        while True:
+            try:
+                sw.add_ports_to_vlan(2, [ap.switchport])
+                ap.plc_disable()
+                ap.disable_radio(band=2)
+                ap.disable_radio(band=5)
+                ap.tear_wds_links(band=2)
+                ap.tear_wds_links(band=5)
+                sw.add_ports_to_vlan(3, [ap.switchport])
+                break
+            except pexpect.EOF:
+                pass
+
+
+    for ap1 in ap_list:
+        for ap2 in ap_list:
+            if ap1 is ap2:
+                continue
+
+            print 'plc'
+            while True:
+                try:
+                    run_test_plc(sw, ap1, ap2)
+                    break
+                except pexpect.TIMEOUT:
+                    print 'timeout! try again...'
+
+            for chain in chain_list_5g:
+                for bw in bw_list_5g:
+                    print '{} {} {}'.format(5, chain, bw)
+                    while True:
+                        try:
+                            run_test(sw, ap1, ap2, band=5, chains=chain, channel=36, bw=bw)
+                            break
+                        except pexpect.TIMEOUT:
+                            print 'timeout! try again...'
+
+
+
+            for chain in chain_list_2g:
+                for bw in bw_list_2g:
+                    print '{} {} {}'.format(2, chain, bw)
+                    while True:
+                        try:
+                            run_test(sw, ap1, ap2, band=2, chains=chain, channel=6, bw=bw, use_apsta=True)
+                            break
+                        except pexpect.TIMEOUT:
+                            print 'timeout! try again...'
+
+
+
     #run_test(sw, ap2, ap1)
 
 

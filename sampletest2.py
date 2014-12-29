@@ -11,7 +11,7 @@ SOURCEIP = '192.168.2.201'
 SINKIP = '192.168.2.202'
 SINKPORT = 10
 TIMESTAMP = time.strftime("%d_%m_%y_%I_%M_%S")
-TARGET_DIR = '~/logs/'
+TARGET_DIR = 'logs/'
 
 
 def run_udp(cli_ip, serv_ip, port=4444, duration=5, bw=500, band=5, ap_src=None, ap_sink=None, is_plc=False):
@@ -289,7 +289,7 @@ def main():
             if ap1 is ap2:
                 continue
 
-            print 'Running plc test'
+            print 'Running plc test {} to {}'.format(ap1.hostname, ap2.hostname)
             while True:
                 try:
                     run_test_plc(sw, ap1, ap2)
@@ -303,7 +303,7 @@ def main():
 
             for chain in chain_list_5g:
                 for bw in bw_list_5g:
-                    print 'Wifi {} {} {}'.format(5, chain, bw)
+                    print 'Wifi {} {} {}, {} to {}'.format(5, chain, bw, ap1.hostname, ap2.hostname)
                     while True:
                         try:
                             run_test(sw, ap1, ap2, band=5, chains=chain, channel=36, bw=bw)
@@ -317,7 +317,7 @@ def main():
 
             for chain in chain_list_2g:
                 for bw in bw_list_2g:
-                    print 'Wifi {} {} {}'.format(2, chain, bw)
+                    print 'Wifi {} {} {}, {} to {}'.format(2, chain, bw, ap1.hostname, ap2.hostname)
                     while True:
                         try:
                             run_test(sw, ap1, ap2, band=2, chains=chain, channel=6, bw=bw, use_apsta=True)

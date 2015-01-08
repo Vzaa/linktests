@@ -71,7 +71,12 @@ class ApNode(object):
             cmd_list = cmd_list + extra_cmds
 
         cmd_list.append(wl_cmd(ifname, 'ssid kedi'))
+        cmd_list.append('ifconfig wl0 down')
+        cmd_list.append('ifconfig wl0 up')
+        cmd_list.append(wl_cmd(ifname, 'bss up'))
         cmd_list.append(wl_cmd(ifname, 'up'))
+        cmd_list.append(wl_cmd(ifname, 'status'))
+        cmd_list.append(wl_cmd(ifname, 'assoclist'))
         self.run_command(cmd_list)
 
     def sta_mode(self, extra_cmds=None, band=5):
@@ -82,8 +87,10 @@ class ApNode(object):
         if extra_cmds is not None:
             cmd_list = cmd_list + extra_cmds
         cmd_list.append(wl_cmd(ifname, 'up'))
+        cmd_list.append(wl_cmd(ifname, 'scan -s kedi'))
         cmd_list.append(wl_cmd(ifname, 'join kedi'))
         cmd_list.append(wl_cmd(ifname, 'wet 1'))
+        cmd_list.append(wl_cmd(ifname, 'status'))
         self.run_command(cmd_list)
 
     def set_ssid(self, ssid, band=5):

@@ -9,12 +9,17 @@ SYSPASSWD = '512900'
 
 class Switch1910(object):
     def __init__(self, hostname, username='admin', passwd=''):
-        #self.c = pexpect.spawnu('telnet ' + hostname, logfile=sys.stdout)
-        self.c = pexpect.spawnu('telnet ' + hostname)
+        self._hostname = hostname
+        self._username = username
+        self._passwd = passwd
+        self._connect()
+
+    def _connect(self):
+        self.c = pexpect.spawnu('telnet ' + self._hostname)
         self.c.expect('Username:')
-        self.c.sendline(username)
+        self.c.sendline(self._username)
         self.c.expect('Password:')
-        self.c.sendline(passwd)
+        self.c.sendline(self._passwd)
         self.c.expect('<HP>')
         self.c.sendline('_cmdline-mode on')
         self.c.expect('[Y/N]')
@@ -34,15 +39,22 @@ class Switch1910(object):
         self.c.interact()
 
     def add_ports_to_vlan(self, vlan, ports):
-        self.c.sendline('vlan ' + str(vlan))
-        self.c.expect('[HP-vlan' + str(vlan) + ']')
+        if not self.c.isalive():
+            self._connect()
 
-        for port in ports:
-            print '{} -> {}'.format(port, vlan)
-            self.c.sendline('port GigabitEthernet 1/0/' + str(port))
+        try:
+            self.c.sendline('vlan ' + str(vlan))
             self.c.expect('[HP-vlan' + str(vlan) + ']')
 
-        self.c.sendline('quit')
+            for port in ports:
+                print '{} -> {}'.format(port, vlan)
+                self.c.sendline('port GigabitEthernet 1/0/' + str(port))
+                self.c.expect('[HP-vlan' + str(vlan) + ']')
+
+            self.c.sendline('quit')
+        except pexpect.EOF:
+            self._connect()
+            self.add_ports_to_vlan(vlan, ports)
 
 
 def main():

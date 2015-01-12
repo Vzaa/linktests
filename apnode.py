@@ -49,17 +49,29 @@ class ApNode(object):
 
     def plc_disable(self):
         cmd_list = []
-        cmd_list.append('brctl setageing br0 25')
-        cmd_list.append('ip -s -s neigh flush all')
-        cmd_list.append('brctl delif br0 plc0')
-        self.run_command_plc(cmd_list)
+        #cmd_list.append('ip -s -s neigh flush all')
+        cmd_list.append("IPADDR=$'" +  str(self.plchostname) + "'")
+        cmd_list.append("ping ${IPADDR} -c 2; ")
+        cmd_list.append("arp ${IPADDR}")
+        cmd_list.append( ("MAC=$(arp ${IPADDR} | cut -d ' ' -f 4); SHORTMAC= ; "
+                        "for i in 1 2 3 4 5 6; do SHORTMAC=${SHORTMAC}$(echo ${MAC} | cut -d ':' -f $i); done; echo ${SHORTMAC};") )
+
+        cmd_list.append( ("if(et sw_mctbl port 0 | grep ${SHORTMAC}); then "
+                        "et robowr 0x10 0x0 0x0940 0x02; fi; ") )
+
+        cmd_list.append( ("if(et sw_mctbl port 1 | grep ${SHORTMAC}); then "
+                        "et robowr 0x11 0x0 0x0940 0x02; fi;  sleep 1; et port_status; ") )
+
+        self.run_command(cmd_list)
 
     def plc_enable(self):
         cmd_list = []
-        cmd_list.append('brctl setageing br0 25')
-        cmd_list.append('ip -s -s neigh flush all')
-        cmd_list.append('brctl addif br0 plc0')
-        self.run_command_plc(cmd_list)
+        #cmd_list.append('ip -s -s neigh flush all')
+        cmd_list.append(("if(et port_status 0 | grep Down); then "
+                        "et robowr 0x10 0x0 0x1140 0x02; fi;"
+                        "if(et port_status 1 | grep Down); then "
+                        "et robowr 0x11 0x0 0x1140 0x02; fi; sleep 3; et port_status;"))
+        self.run_command(cmd_list)
 
     def ap_mode(self, extra_cmds=None, band=5):
         ifname = self.ifs[band]

@@ -1,7 +1,10 @@
 "AP node class"
 
-from telnethelper import do_remote, do_remote_plc
+from telnethelper import do_remote
 
+CONTROL_VLAN = 2
+DUMMY_VLAN = 3
+SINK_VLAN = 4
 
 def wl_cmd(ifname, command):
     cmd = 'wl -i ' + ifname + ' ' + command
@@ -10,15 +13,16 @@ def wl_cmd(ifname, command):
 
 class ApNode(object):
     def __init__(self, hostname, switchport,
-                 plchostname='', if2g='wl0', if5g='wl1',
-                 username='root', passwd=None, macs=None):
+                 if2g='wl0', if5g='wl1',
+                 username='root', passwd=None, macs=None, sw=None):
         self.hostname = hostname
         self.switchport = switchport
-        self.plchostname = plchostname
         self.username = username
         self.passwd = passwd
         self.ifs = {2: if2g, 5: if5g}
         self.radio_enabled = True
+        self.sw = sw
+        self.vlan = DUMMY_VLAN
 
         if macs is None:
             self.macs = dict()
@@ -28,7 +32,6 @@ class ApNode(object):
     @classmethod
     def fromdict(cls, mydict):
         return cls(hostname=mydict['hostname'],
-                   plchostname=mydict['plchostname'],
                    switchport=mydict['switchport'],
                    if2g=mydict['if2g'],
                    if5g=mydict['if5g'],
@@ -59,35 +62,6 @@ class ApNode(object):
     def run_command(self, command_list):
         return do_remote(self.hostname, command_list, self.username, self.passwd)
 
-    def run_command_plc(self, command_list):
-        return do_remote_plc(self.plchostname, command_list, 'admin', 'admin')
-
-    def plc_disable(self):
-        cmd_list = []
-        #cmd_list.append('ip -s -s neigh flush all')
-        cmd_list.append("IPADDR=$'" +  str(self.plchostname) + "'")
-        cmd_list.append("ping ${IPADDR} -c 2; ")
-        cmd_list.append("arp ${IPADDR}")
-        cmd_list.append( ("MAC=$(arp ${IPADDR} | cut -d ' ' -f 4); SHORTMAC= ; "
-                        "for i in 1 2 3 4 5 6; do SHORTMAC=${SHORTMAC}$(echo ${MAC} | cut -d ':' -f $i); done; echo ${SHORTMAC};") )
-
-        cmd_list.append( ("if(et sw_mctbl port 0 | grep ${SHORTMAC}); then "
-                        "et robowr 0x10 0x0 0x0940 0x02; fi; ") )
-
-        cmd_list.append( ("if(et sw_mctbl port 1 | grep ${SHORTMAC}); then "
-                        "et robowr 0x11 0x0 0x0940 0x02; fi;  sleep 1; et port_status; ") )
-
-        self.run_command(cmd_list)
-
-    def plc_enable(self):
-        cmd_list = []
-        #cmd_list.append('ip -s -s neigh flush all')
-        cmd_list.append(("if(et port_status 0 | grep Down); then "
-                        "et robowr 0x10 0x0 0x1140 0x02; fi;"
-                        "if(et port_status 1 | grep Down); then "
-                        "et robowr 0x11 0x0 0x1140 0x02; fi; sleep 3; et port_status;"))
-        self.run_command(cmd_list)
-
     def ap_mode(self, extra_cmds=None, band=5):
         ifname = self.ifs[band]
         cmd_list = []
@@ -98,8 +72,8 @@ class ApNode(object):
             cmd_list = cmd_list + extra_cmds
 
         cmd_list.append(wl_cmd(ifname, 'ssid kedi'))
-        cmd_list.append('ifconfig wl0 down')
-        cmd_list.append('ifconfig wl0 up')
+        cmd_list.append('ifconfig %s down' % ifname)
+        cmd_list.append('ifconfig %s up' % ifname)
         cmd_list.append(wl_cmd(ifname, 'bss up'))
         cmd_list.append(wl_cmd(ifname, 'up'))
         cmd_list.append(wl_cmd(ifname, 'status'))
@@ -147,6 +121,7 @@ class ApNode(object):
         ifname = self.ifs[band]
         cmd_list = []
         cmd_list.append(wl_cmd(ifname, 'down'))
+        cmd_list.append(wl_cmd(ifname, 'ap 1'))
         self.run_command(cmd_list)
         self.radio_enabled = False
 
@@ -184,7 +159,9 @@ class ApNode(object):
 
     def ping(self, ipaddr):
         cmd_list = []
-        cmd_list.append('ping ' + ipaddr + ' -c 3')
+        for e in xrange(3):
+            cmd_list.append('ping ' + ipaddr + ' -c 1')
+            cmd_list.append('sleep 1')
         output = self.run_command(cmd_list)
 
     def arp_clean(self):
@@ -212,12 +189,26 @@ class ApNode(object):
         lines = self.run_command(cmd_list)
         return lines
 
-    def get_plc_info(self):
-        cmd_list = []
-        cmd_list.append('homeplugctl assocdevices')
-        cmd_list.append('homeplugctl status')
-        lines = self.run_command_plc(cmd_list)
-        return lines
+    def get_switchport(self):
+        return self.switchport
+
+    def get_idle_vlan(self):
+        return self.switchport + 10
+
+    def to_control_vlan(self):
+        if self.vlan != CONTROL_VLAN:
+            self.sw.add_ports_to_vlan(CONTROL_VLAN, [self.switchport])
+            self.vlan = CONTROL_VLAN
+
+    def to_sink_vlan(self):
+        if self.vlan != SINK_VLAN:
+            self.sw.add_ports_to_vlan(SINK_VLAN, [self.switchport])
+            self.vlan = SINK_VLAN
+
+    def to_idle_vlan(self):
+        if self.vlan != self.get_idle_vlan():
+            self.sw.add_ports_to_vlan(self.get_idle_vlan(), [self.switchport])
+            self.vlan = self.get_idle_vlan()
 
 
 def main():

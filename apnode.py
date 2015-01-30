@@ -11,7 +11,7 @@ def wl_cmd(ifname, command):
 class ApNode(object):
     def __init__(self, hostname, switchport,
                  plchostname='', if2g='wl0', if5g='wl1',
-                 username='root', passwd=''):
+                 username='root', passwd=None, macs=None):
         self.hostname = hostname
         self.switchport = switchport
         self.plchostname = plchostname
@@ -19,7 +19,22 @@ class ApNode(object):
         self.passwd = passwd
         self.ifs = {2: if2g, 5: if5g}
         self.radio_enabled = True
-        self.macs = {}
+
+        if macs is None:
+            self.macs = dict()
+        else:
+            self.macs = macs
+
+    @classmethod
+    def fromdict(cls, mydict):
+        return cls(hostname=mydict['hostname'],
+                   plchostname=mydict['plchostname'],
+                   switchport=mydict['switchport'],
+                   if2g=mydict['if2g'],
+                   if5g=mydict['if5g'],
+                   username=mydict['username'],
+                   passwd=mydict['passwd'],
+                   macs={2: mydict['mac2g'], 5: mydict['mac5g']})
 
     def ap_cfg(self, channel, bw, chains, band=5):
         ifname = self.ifs[band]

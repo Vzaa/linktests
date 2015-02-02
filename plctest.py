@@ -7,8 +7,8 @@ from hp1910 import Switch1910
 import pyperf.pyperfapi as perf
 
 
-#SOURCEIP = '192.168.2.201'
-SOURCEIP = '192.168.2.100'
+SOURCEIP = '192.168.2.201'
+#SOURCEIP = '192.168.2.100'
 SINKIP = '192.168.2.202'
 SINKPORT = 10
 TIMESTAMP = time.strftime("%d_%m_%y_%I_%M_%S")

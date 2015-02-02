@@ -7,8 +7,8 @@ from hp1910 import Switch1910
 import pyperf.pyperfapi as perf
 
 
-SOURCEIP = '192.168.2.201'
-#SOURCEIP = '192.168.2.100'
+#SOURCEIP = '192.168.2.201'
+SOURCEIP = '192.168.2.100'
 SINKIP = '192.168.2.202'
 SINKPORT = 10
 TIMESTAMP = time.strftime("%d_%m_%y_%I_%M_%S")
@@ -133,7 +133,6 @@ def run_test(ap1, ap2, band=5, channel=36, bw=80, chains='3x3', use_apsta=False,
                 break
             break
 
-
         if two_way:
             ap2.to_idle_vlan()
             ap1.to_sink_vlan()
@@ -142,24 +141,25 @@ def run_test(ap1, ap2, band=5, channel=36, bw=80, chains='3x3', use_apsta=False,
             os.system('arp -d ' + ap1.hostname)
             os.system('arp -d ' + ap2.hostname)
             ret = 1
-            for e in xrange(3):
+            for e in xrange(100):
                 ret = os.system('ping -c 1 ' + SINKIP)
                 if ret == 0:
                     break
                 time.sleep(1)
 
-            print 'start second test'
-            while True:
-                try:
-                    filename_base = '{}{}_{}_{}_{}g_ch{}_bw{}_{}'.format(TARGET_DIR, TIMESTAMP, ap2.hostname, ap1.hostname, band, channel, bw, chains)
-                    run_udp(SOURCEIP, SINKIP, band=band, ap_src=ap2, ap_sink=ap1, filename_base=filename_base)
-                except requests.Timeout:
-                    continue
-                except requests.ConnectionError:
-                    continue
-                except pexpect.TIMEOUT:
+            if ret == 0:
+                print 'start second test'
+                while True:
+                    try:
+                        filename_base = '{}{}_{}_{}_{}g_ch{}_bw{}_{}'.format(TARGET_DIR, TIMESTAMP, ap2.hostname, ap1.hostname, band, channel, bw, chains)
+                        run_udp(SOURCEIP, SINKIP, band=band, ap_src=ap2, ap_sink=ap1, filename_base=filename_base)
+                    except requests.Timeout:
+                        continue
+                    except requests.ConnectionError:
+                        continue
+                    except pexpect.TIMEOUT:
+                        break
                     break
-                break
 
     os.system('arp -d ' + SINKIP)
     os.system('arp -d ' + ap1.hostname)
@@ -198,7 +198,8 @@ def main():
     chain_list_2g = ['2x2', '1x1']
     bw_list_2g = [20, 40]
 
-    sw.add_ports_to_vlan(DUMMY_VLAN, range(3, 17))
+    for port in range(3, 17):
+        sw.add_ports_to_vlan(port + 10, [port])
     #quit()
 
     ap_list = []
@@ -247,14 +248,14 @@ def main():
             if test_id not in tests_done_5g_wds:
                 tests_done_5g_wds.add(test_id)
             else:
-                print 'skip cause symmetry'
+                print 'skip test because of symmetry'
                 continue
 
             test_id = (ap2.hostname, ap1.hostname)
             if test_id not in tests_done_5g_wds:
                 tests_done_5g_wds.add(test_id)
             else:
-                print 'skip cause symmetry'
+                print 'skip test because of symmetry'
                 continue
 
             for chain in chain_list_5g:

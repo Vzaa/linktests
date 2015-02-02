@@ -5,7 +5,7 @@ import pexpect
 
 def do_remote(hostname, command_list, username='root', passwd=''):
     res = ''
-    c = pexpect.spawn('telnet ' + hostname, timeout=60)
+    c = pexpect.spawn('telnet ' + hostname, timeout=120)
     c.expect('login:')
     c.sendline(username)
     if passwd is not None:

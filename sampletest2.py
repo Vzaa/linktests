@@ -112,7 +112,7 @@ def run_test(ap1, ap2, band=5, channel=36, bw=80, chains='3x3', use_apsta=False,
     ap1.ping(SINKIP)
 
     ret = 1
-    for e in xrange(3):
+    for e in xrange(10):
         ret = os.system('ping -c 1 ' + SINKIP)
         if ret == 0:
             break
@@ -130,7 +130,7 @@ def run_test(ap1, ap2, band=5, channel=36, bw=80, chains='3x3', use_apsta=False,
             except requests.ConnectionError:
                 continue
             except pexpect.TIMEOUT:
-                break
+                continue
             break
 
         if two_way:
@@ -158,7 +158,7 @@ def run_test(ap1, ap2, band=5, channel=36, bw=80, chains='3x3', use_apsta=False,
                     except requests.ConnectionError:
                         continue
                     except pexpect.TIMEOUT:
-                        break
+                        continue
                     break
 
     os.system('arp -d ' + SINKIP)

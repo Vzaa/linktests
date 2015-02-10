@@ -157,6 +157,19 @@ class ApNode(object):
         cmd_list.append(wl_cmd(ifname, 'wds none'))
         self.run_command(cmd_list)
 
+    def eth_time_bomb(self):
+        cmd_list = []
+        cmd_list.append('(sleep 2; ifconfig eth0 down; sleep 20; ifconfig eth0 up)&')
+        #cmd_list.append('(sleep 20)&')
+        cmd_list.append('echo $!')
+        lines = self.run_command(cmd_list)
+        return lines[-2]
+
+    def kill_pid(self, pid):
+        cmd_list = []
+        cmd_list.append('kill %s' % pid)
+        lines = self.run_command(cmd_list)
+
     def ping(self, ipaddr):
         cmd_list = []
         for e in xrange(3):

@@ -8,7 +8,7 @@ SINK_VLAN = 4
 
 
 class PlcNode(object):
-    def __init__(self, hostname, switchport,
+    def __init__(self, hostname, switchport=None,
                  username='admin', passwd='admin', sw=None):
         self.hostname = hostname
         self.switchport = switchport

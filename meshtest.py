@@ -3,6 +3,7 @@ import time
 import pexpect
 import requests
 from apnode import ApNode
+from plcnode import PlcNode
 from hp1910 import Switch1910
 
 
@@ -15,25 +16,42 @@ TARGET_DIR = 'logs/'
 
 
 def wds_link(ap1, ap2, channel=36, bw=80, chains='3x3', band=5):
-    ap1.enable_radio(band=band)
-    ap1.arp_clean()
-    cfg = ap1.ap_cfg(channel, bw, chains, band=band)
-    ap1.set_wds_link(ap2.macs[band], extra_cmds=cfg, band=band)
 
     ap2.enable_radio(band=band)
     ap2.arp_clean()
     cfg = ap2.ap_cfg(channel, bw, chains, band=band)
     ap2.set_wds_link(ap1.macs[band], extra_cmds=cfg, band=band)
-    ap2.eth_time_bomb()
+    pid = ap2.eth_time_bomb()
 
-def wds_cleanup(ap1, ap2):
+    ap1.enable_radio(band=band)
+    ap1.arp_clean()
+    cfg = ap1.ap_cfg(channel, bw, chains, band=band)
+    ap1.set_wds_link(ap2.macs[band], extra_cmds=cfg, band=band)
+
+    time.sleep(3)
+    os.system('arp -d ' + ap2.hostname)
+    ret = 1
+    for e in xrange(10):
+        ret = os.system('ping -c 1 -w 1 %s' % ap2.hostname)
+        if ret == 0:
+            break
+        time.sleep(1)
+
+    if ret == 0:
+        return pid
+    else:
+        return 0
+
+
+def wds_cleanup(ap1, ap2, band=5):
+
+    ap2.tear_wds_links(band=band, eth_enable=True)
+    ap2.disable_radio(band=2)
+    ap2.disable_radio(band=5)
+
     ap1.tear_wds_links(band=band)
     ap1.disable_radio(band=2)
     ap1.disable_radio(band=5)
-
-    ap2.tear_wds_links(band=band)
-    ap2.disable_radio(band=2)
-    ap2.disable_radio(band=5)
 
 
 def run_test(ap1, ap2):
@@ -68,7 +86,8 @@ def main():
         pass
 
     node_list = []
-    node_list.append((ApNode(hostname='192.168.2.21'), PlcNode(hostname='192.168.2.31'))
+    node_list.append((ApNode(hostname='192.168.2.20'), PlcNode(hostname='192.168.2.31')))
+    node_list.append((ApNode(hostname='192.168.2.21'), PlcNode(hostname='192.168.2.31')))
 
     print 'Init states of APs'
     for wifi, plc in node_list:
@@ -95,32 +114,41 @@ def main():
                 continue
 
             #check for symmetry
-            test_id = (wifi1.hostname, wifi2.hostname)
-            if test_id not in tests_done:
-                tests_done.add(test_id)
-            else:
-                print 'skip test because of symmetry'
-                continue
+            #test_id = (wifi1.hostname, wifi2.hostname)
+            #if test_id not in tests_done:
+                #tests_done.add(test_id)
+            #else:
+                #print 'skip test because of symmetry'
+                #continue
 
-            test_id = (wifi2.hostname, wifi1.hostname)
-            if test_id not in tests_done:
-                tests_done.add(test_id)
-            else:
-                print 'skip test because of symmetry'
-                continue
+            #test_id = (wifi2.hostname, wifi1.hostname)
+            #if test_id not in tests_done:
+                #tests_done.add(test_id)
+            #else:
+                #print 'skip test because of symmetry'
+                #continue
 
-            print 'Wifi {} {} {}, {} to {}'.format(5, chain, bw, wifi1.hostname, wifi2.hostname)
             while True:
                 try:
-                    wds_link(wifi1, wifi2)
-                    run_test(wifi1, wifi2)
+                    pid = wds_link(wifi1, wifi2)
+                    if pid != 0:
+                        wifi2.kill_pid(pid)
+                    else:
+                        ret = 1
+                        while True:
+                            ret = os.system('ping -c 1 -w 1 %s' % wifi2.hostname)
+                            if ret == 0:
+                                break
+                            time.sleep(1)
+
+                    ret = os.system('ping -c 5 %s' % wifi2.hostname)
                     wds_cleanup(wifi1, wifi2)
                     break
                 except pexpect.EOF:
-                    print 'Try again...'
+                    print 'EOF Try again...'
                     pass
                 except pexpect.TIMEOUT:
-                    print 'Try again...'
+                    print 'Timeout Try again...'
                     pass
 
 

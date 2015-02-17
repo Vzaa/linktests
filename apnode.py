@@ -1,5 +1,6 @@
 "AP node class"
-
+import os
+import time
 from telnethelper import do_remote
 
 CONTROL_VLAN = 2
@@ -12,7 +13,7 @@ def wl_cmd(ifname, command):
 
 
 class ApNode(object):
-    def __init__(self, hostname, switchport,
+    def __init__(self, hostname, switchport=None,
                  if2g='wl0', if5g='wl1',
                  username='root', passwd=None, macs=None, sw=None):
         self.hostname = hostname
@@ -125,7 +126,7 @@ class ApNode(object):
         self.run_command(cmd_list)
         self.radio_enabled = False
 
-    def set_wds_link(self, dest_mac, extra_cmds=None, band=5):
+    def set_wds_link(self, dest_mac, extra_cmds=None, band=5, time_bomb=False):
         ifname = self.ifs[band]
         cmd_list = []
         cmd_list.append(wl_cmd(ifname, 'down'))
@@ -151,15 +152,28 @@ class ApNode(object):
 
         self.run_command(cmd_list)
 
-    def tear_wds_links(self, band=5):
+    def tear_wds_links(self, band=5, eth_enable=False):
         ifname = self.ifs[band]
         cmd_list = []
-        cmd_list.append(wl_cmd(ifname, 'wds none'))
+        if eth_enable:
+            cmd_list.append('(sleep 1; ifconfig eth0 up; wl -i wl1 wds none)&')
+        else:
+            cmd_list.append(wl_cmd(ifname, 'wds none'))
         self.run_command(cmd_list)
+        if eth_enable:
+            print 'sleep...'
+            time.sleep(2)
+            os.system('arp -d ' + self.hostname)
+            ret = 1
+            while True:
+                ret = os.system('ping -c 1 -w 1 %s' % self.hostname)
+                if ret == 0:
+                    break
+                time.sleep(1)
 
     def eth_time_bomb(self):
         cmd_list = []
-        cmd_list.append('(sleep 2; ifconfig eth0 down; sleep 20; ifconfig eth0 up)&')
+        cmd_list.append('(sleep 2; ifconfig eth0 down; sleep 20; wl -i wl1 wds none; ifconfig eth0 up)&')
         #cmd_list.append('(sleep 20)&')
         cmd_list.append('echo $!')
         lines = self.run_command(cmd_list)

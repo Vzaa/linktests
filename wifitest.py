@@ -72,9 +72,6 @@ def run_udp(cli_ip, serv_ip, port=4444, duration=5, bw=500, band=5, ap_src=None,
 
 
 def run_test(ap1, ap2, band=5, channel=36, bw=80, chains='3x3', use_apsta=False, two_way=False):
-    cli_log = []
-    serv_log = []
-    dev_log = []
 
     # config ap1
     ap1.to_control_vlan()
@@ -182,42 +179,7 @@ def run_test(ap1, ap2, band=5, channel=36, bw=80, chains='3x3', use_apsta=False,
     ap2.to_idle_vlan()
 
 
-def main():
-    try:
-        os.mkdir(TARGET_DIR)
-    except OSError:
-        pass
-    sw = Switch1910('192.168.2.200', 'admin', 'admin')
-
-    #chain_list_5g = ['2x2', '1x1']
-    #bw_list_5g = [40, 80]
-
-    chain_list_5g = ['3x3', '2x2', '1x1']
-    bw_list_5g = [20, 40, 80]
-
-    chain_list_2g = ['2x2', '1x1']
-    bw_list_2g = [20, 40]
-
-    for port in range(3, 17):
-        sw.add_ports_to_vlan(port + 10, [port])
-    #quit()
-
-    ap_list = []
-    ap_list.append(ApNode(hostname='192.168.2.21', switchport=3, sw=sw))
-    ap_list.append(ApNode(hostname='192.168.2.22', switchport=4, sw=sw))
-    ap_list.append(ApNode(hostname='192.168.2.23', switchport=5, sw=sw))
-    #ap_list.append(ApNode(hostname='192.168.2.24', switchport=6, sw=sw))
-    #ap_list.append(ApNode(hostname='192.168.2.25', switchport=7, sw=sw))
-    #ap_list.append(ApNode(hostname='192.168.2.26', switchport=8, sw=sw))
-    #ap_list.append(ApNode(hostname='192.168.2.27', switchport=9, sw=sw))
-
-    #put the sink to sink vlan
-    sw.add_ports_to_vlan(SINK_VLAN, [SINKPORT])
-
-    for ap in ap_list:
-        ap.to_idle_vlan()
-
-    print 'Init states of APs'
+def reset_ap_states(ap_list):
     for ap in ap_list:
         while True:
             try:
@@ -231,12 +193,58 @@ def main():
                 break
             except pexpect.EOF:
                 print 'Try again...'
-                pass
             except pexpect.TIMEOUT:
                 print 'Try again...'
-                pass
 
+
+def test_2g_apsta(ap_list):
+    chain_list = ['2x2', '1x1']
+    bw_list = [20, 40]
+
+    for ap1 in ap_list:
+        for ap2 in ap_list:
+            if ap1 is ap2:
+                continue
+
+            for chain in chain_list:
+                for bw in bw_list:
+                    print 'Wifi {} {} {}, {} to {}'.format(2, chain, bw, ap1.hostname, ap2.hostname)
+                    while True:
+                        try:
+                            run_test(ap1, ap2, band=2, chains=chain, channel=6, bw=bw, use_apsta=True)
+                            break
+                        except pexpect.EOF:
+                            print 'Try again...'
+                        except pexpect.TIMEOUT:
+                            print 'Try again...'
+
+
+def test_5g_apsta(ap_list):
+    chain_list = ['3x2', '2x1', '2x1']
+    bw_list = [20, 40]
+
+    for ap1 in ap_list:
+        for ap2 in ap_list:
+            if ap1 is ap2:
+                continue
+
+            for chain in chain_list:
+                for bw in bw_list:
+                    print 'Wifi {} {} {}, {} to {}'.format(5, chain, bw, ap1.hostname, ap2.hostname)
+                    while True:
+                        try:
+                            run_test(ap1, ap2, band=5, chains=chain, channel=36, bw=bw, use_apsta=True)
+                            break
+                        except pexpect.EOF:
+                            print 'Try again...'
+                        except pexpect.TIMEOUT:
+                            print 'Try again...'
+
+
+def test_5g_wds(ap_list):
     tests_done_5g_wds = set()
+    chain_list = ['3x3', '2x2', '1x1']
+    bw_list = [20, 40, 80]
 
     for ap1 in ap_list:
         for ap2 in ap_list:
@@ -258,8 +266,8 @@ def main():
                 print 'skip test because of symmetry'
                 continue
 
-            for chain in chain_list_5g:
-                for bw in bw_list_5g:
+            for chain in chain_list:
+                for bw in bw_list:
                     print 'Wifi {} {} {}, {} to {}'.format(5, chain, bw, ap1.hostname, ap2.hostname)
                     while True:
                         try:
@@ -267,29 +275,47 @@ def main():
                             break
                         except pexpect.EOF:
                             print 'Try again...'
-                            pass
                         except pexpect.TIMEOUT:
                             print 'Try again...'
-                            pass
-    for ap1 in ap_list:
-        for ap2 in ap_list:
-            if ap1 is ap2:
-                continue
 
-            for chain in chain_list_2g:
-                for bw in bw_list_2g:
-                    print 'Wifi {} {} {}, {} to {}'.format(2, chain, bw, ap1.hostname, ap2.hostname)
-                    while True:
-                        try:
-                            run_test(ap1, ap2, band=2, chains=chain, channel=6, bw=bw, use_apsta=True)
-                            break
-                        except pexpect.EOF:
-                            print 'Try again...'
-                            pass
-                        except pexpect.TIMEOUT:
-                            print 'Try again...'
-                            pass
 
+def main():
+    try:
+        os.mkdir(TARGET_DIR)
+    except OSError:
+        pass
+    sw = Switch1910('192.168.2.200', 'admin', 'admin')
+
+    #chain_list = ['2x2', '1x1']
+    #bw_list = [40, 80]
+
+
+
+    for port in range(3, 17):
+        sw.add_ports_to_vlan(port + 10, [port])
+    #quit()
+
+    ap_list = []
+    ap_list.append(ApNode(hostname='192.168.2.21', switchport=3, sw=sw))
+    ap_list.append(ApNode(hostname='192.168.2.22', switchport=4, sw=sw))
+    ap_list.append(ApNode(hostname='192.168.2.23', switchport=5, sw=sw))
+    #ap_list.append(ApNode(hostname='192.168.2.24', switchport=6, sw=sw))
+    #ap_list.append(ApNode(hostname='192.168.2.25', switchport=7, sw=sw))
+    #ap_list.append(ApNode(hostname='192.168.2.26', switchport=8, sw=sw))
+    #ap_list.append(ApNode(hostname='192.168.2.27', switchport=9, sw=sw))
+
+    #put the sink to sink vlan
+    sw.add_ports_to_vlan(SINK_VLAN, [SINKPORT])
+
+    #make sure ap's are in their idle vlans
+    for ap in ap_list:
+        ap.to_idle_vlan()
+
+    #reset ap states
+    reset_ap_states(ap_list)
+
+    test_5g_wds(ap_list)
+    test_2g_apsta(ap_list)
 
 if __name__ == '__main__':
     main()

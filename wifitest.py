@@ -274,21 +274,24 @@ def main():
     #put the sink to sink vlan
     sw.add_ports_to_vlan(SINK_VLAN, [SINKPORT])
 
-    #reset ap states
     reset_ap_states(ap_list)
 
+    #symmetric 5g wds tests
     chain_list = [('3x3', '3x3'), ('2x2', '2x2'), ('1x1', '1x1')]
     bw_list = [20, 40, 80]
     test_wds(ap_list, chain_list, bw_list, 5, 36)
 
+    #symmetric 2g ap-sta tests
     chain_list = [('2x2', '2x2'), ('1x1', '1x1')]
     bw_list = [20, 40]
     test_apsta(ap_list, chain_list, bw_list, 2, 6)
 
+    #non-symmetric 2g ap-sta tests
     chain_list = [('2x2', '1x1')]
     bw_list = [20, 40]
     test_apsta(ap_list, chain_list, bw_list, 2, 6)
 
+    #non-symmetric 5g ap-sta tests
     chain_list = [('3x3', '2x2'), ('3x3', '1x1'), ('2x2', '1x1')]
     bw_list = [20, 40, 80]
     test_apsta(ap_list, chain_list, bw_list, 5, 36)

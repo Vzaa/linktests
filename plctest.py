@@ -194,13 +194,6 @@ def main():
                 print 'skip test because of symmetry'
                 continue
 
-            test_id = (node2.hostname, node1.hostname)
-            if test_id not in tests_done:
-                tests_done.add(test_id)
-            else:
-                print 'skip cause symmetry'
-                continue
-
             print 'PLC {} to {}'.format(node1.hostname, node2.hostname)
             while True:
                 try:

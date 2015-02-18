@@ -59,12 +59,9 @@ class Switch1910(object):
 
 def main():
     pass
-    #sw = Switch1910(IPADDR, 'admin', 'admin')
-    #sw.add_ports_to_vlan(1, [2, 3, 4, 5, 6])
-    #sw.add_ports_to_vlan(3, range(2, 21))
-    #sw.add_ports_to_vlan(2, [15])
-    #sw.interact()
-    #sw.close()
+    sw = Switch1910(IPADDR, 'admin', 'admin')
+    sw.interact()
+    sw.close()
 
 if __name__ == '__main__':
     main()

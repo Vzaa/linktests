@@ -259,14 +259,8 @@ def main():
         pass
     sw = Switch1910('192.168.2.200', 'admin', 'admin')
 
-    #chain_list = ['2x2', '1x1']
-    #bw_list = [40, 80]
-
-
-
     for port in range(3, 17):
         sw.add_ports_to_vlan(port + 10, [port])
-    #quit()
 
     ap_list = []
     ap_list.append(ApNode(hostname='192.168.2.21', switchport=3, sw=sw))
@@ -279,10 +273,6 @@ def main():
 
     #put the sink to sink vlan
     sw.add_ports_to_vlan(SINK_VLAN, [SINKPORT])
-
-    #make sure ap's are in their idle vlans
-    for ap in ap_list:
-        ap.to_idle_vlan()
 
     #reset ap states
     reset_ap_states(ap_list)

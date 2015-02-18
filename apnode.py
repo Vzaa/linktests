@@ -7,7 +7,7 @@ DUMMY_VLAN = 3
 SINK_VLAN = 4
 
 def wl_cmd(ifname, command):
-    cmd = 'wl -i ' + ifname + ' ' + command
+    cmd = 'wl -i %s %s' % (ifname, command)
     return cmd
 
 
@@ -212,10 +212,6 @@ class ApNode(object):
 
 
 def main():
-    #asd = ApNode('192.168.2.5', '', 2, if2g='wl0', if5g='wl0')
-    #asd.set_ssid('potato', band=2)
-    #asd.set_ssid('kereviz', band=2)
-    #print asd.macs
     pass
 
 if __name__ == '__main__':

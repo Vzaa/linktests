@@ -73,10 +73,6 @@ def run_udp(cli_ip, serv_ip, port=4444, duration=5, bw=500, node_src=None, node_
 
 
 def run_test(node1, node2, two_way=False):
-    cli_log = []
-    serv_log = []
-    dev_log = []
-
     # add APs to their vlans for tests
     node1.to_control_vlan()
     node2.to_sink_vlan()
@@ -155,15 +151,11 @@ def main():
 
     for port in range(3, 17):
         sw.add_ports_to_vlan(port + 10, [port])
-    #quit()
 
     plc_list = []
     plc_list.append(PlcNode(hostname='192.168.2.31', switchport=12, sw=sw))
     plc_list.append(PlcNode(hostname='192.168.2.33', switchport=14, sw=sw))
     plc_list.append(PlcNode(hostname='192.168.2.34', switchport=16, sw=sw))
-
-    #plc_list[0].to_control_vlan()
-    #quit()
 
     sw.add_ports_to_vlan(SINK_VLAN, [SINKPORT])
 
@@ -183,9 +175,6 @@ def main():
                 print 'Try again...'
                 pass
 
-    #plc_list[0].to_control_vlan()
-    #quit()
-
     tests_done = set()
 
     for node1 in plc_list:
@@ -196,9 +185,11 @@ def main():
             os.system('arp -d ' + node2.hostname)
 
             #check for symmetry
-            test_id = (node1.hostname, node2.hostname)
-            if test_id not in tests_done:
-                tests_done.add(test_id)
+            test_id_a = (node1.hostname, node2.hostname)
+            test_id_b = (node2.hostname, node1.hostname)
+            if test_id_a not in tests_done or test_id_b not in tests_done:
+                tests_done.add(test_id_a)
+                tests_done.add(test_id_b)
             else:
                 print 'skip test because of symmetry'
                 continue

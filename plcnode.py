@@ -1,4 +1,4 @@
-"AP node class"
+"PLC node class"
 
 from telnethelper import do_remote_plc
 
@@ -68,10 +68,6 @@ class PlcNode(object):
 
 
 def main():
-    #asd = ApNode('192.168.2.5', '', 2, if2g='wl0', if5g='wl0')
-    #asd.set_ssid('potato', band=2)
-    #asd.set_ssid('kereviz', band=2)
-    #print asd.macs
     pass
 
 if __name__ == '__main__':

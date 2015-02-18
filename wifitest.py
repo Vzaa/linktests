@@ -71,13 +71,13 @@ def run_udp(cli_ip, serv_ip, port=4444, duration=5, bw=500, band=5, ap_src=None,
             writer.write(item.strip() + '\n')
 
 
-def run_test(ap1, ap2, band=5, channel=36, bw=80, chains='3x3', use_apsta=False, two_way=False):
+def run_test(ap1, ap2, band=5, channel=36, bw=80, chain='3x3', chain_b=None, use_apsta=False, two_way=False):
 
     # config ap1
     ap1.to_control_vlan()
     ap1.enable_radio(band=band)
     ap1.arp_clean()
-    cfg = ap1.ap_cfg(channel, bw, chains, band=band)
+    cfg = ap1.ap_cfg(channel, bw, chain, band=band)
     if not use_apsta:
         ap1.set_wds_link(ap2.macs[band], extra_cmds=cfg, band=band)
     else:
@@ -88,7 +88,11 @@ def run_test(ap1, ap2, band=5, channel=36, bw=80, chains='3x3', use_apsta=False,
     ap2.to_control_vlan()
     ap2.enable_radio(band=band)
     ap2.arp_clean()
-    cfg = ap2.ap_cfg(channel, bw, chains, band=band)
+
+    if chain_b is None:
+        chain_b = chain
+
+    cfg = ap2.ap_cfg(channel, bw, chain_b, band=band)
     if not use_apsta:
         ap2.set_wds_link(ap1.macs[band], extra_cmds=cfg, band=band)
     else:
@@ -120,7 +124,7 @@ def run_test(ap1, ap2, band=5, channel=36, bw=80, chains='3x3', use_apsta=False,
     else:
         while True:
             try:
-                filename_base = '{}{}_{}_{}_{}g_ch{}_bw{}_{}'.format(TARGET_DIR, TIMESTAMP, ap1.hostname, ap2.hostname, band, channel, bw, chains)
+                filename_base = '{}{}_{}_{}_{}g_ch{}_bw{}_{}_{}'.format(TARGET_DIR, TIMESTAMP, ap1.hostname, ap2.hostname, band, channel, bw, chain, chain_b)
                 run_udp(SOURCEIP, SINKIP, band=band, ap_src=ap1, ap_sink=ap2, filename_base=filename_base)
             except requests.Timeout:
                 continue
@@ -148,7 +152,7 @@ def run_test(ap1, ap2, band=5, channel=36, bw=80, chains='3x3', use_apsta=False,
                 print 'start second test'
                 while True:
                     try:
-                        filename_base = '{}{}_{}_{}_{}g_ch{}_bw{}_{}'.format(TARGET_DIR, TIMESTAMP, ap2.hostname, ap1.hostname, band, channel, bw, chains)
+                        filename_base = '{}{}_{}_{}_{}g_ch{}_bw{}_{}_{}'.format(TARGET_DIR, TIMESTAMP, ap1.hostname, ap2.hostname, band, channel, bw, chain, chain_b)
                         run_udp(SOURCEIP, SINKIP, band=band, ap_src=ap2, ap_sink=ap1, filename_base=filename_base)
                     except requests.Timeout:
                         continue
@@ -197,21 +201,19 @@ def reset_ap_states(ap_list):
                 print 'Try again...'
 
 
-def test_2g_apsta(ap_list):
-    chain_list = ['2x2', '1x1']
-    bw_list = [20, 40]
 
+def test_apsta(ap_list, chain_list, bw_list, band, channel):
     for ap1 in ap_list:
         for ap2 in ap_list:
             if ap1 is ap2:
                 continue
 
-            for chain in chain_list:
+            for chain_a, chain_b in chain_list:
                 for bw in bw_list:
-                    print 'Wifi {} {} {}, {} to {}'.format(2, chain, bw, ap1.hostname, ap2.hostname)
+                    print 'Wifi {} {} {} {}, {} to {}'.format(band, chain_a, chain_b, bw, ap1.hostname, ap2.hostname)
                     while True:
                         try:
-                            run_test(ap1, ap2, band=2, chains=chain, channel=6, bw=bw, use_apsta=True)
+                            run_test(ap1, ap2, band=band, chain=chain_a, chain_b=chain_b, channel=channel, bw=bw, use_apsta=True)
                             break
                         except pexpect.EOF:
                             print 'Try again...'
@@ -219,32 +221,8 @@ def test_2g_apsta(ap_list):
                             print 'Try again...'
 
 
-def test_5g_apsta(ap_list):
-    chain_list = ['3x2', '2x1', '2x1']
-    bw_list = [20, 40]
-
-    for ap1 in ap_list:
-        for ap2 in ap_list:
-            if ap1 is ap2:
-                continue
-
-            for chain in chain_list:
-                for bw in bw_list:
-                    print 'Wifi {} {} {}, {} to {}'.format(5, chain, bw, ap1.hostname, ap2.hostname)
-                    while True:
-                        try:
-                            run_test(ap1, ap2, band=5, chains=chain, channel=36, bw=bw, use_apsta=True)
-                            break
-                        except pexpect.EOF:
-                            print 'Try again...'
-                        except pexpect.TIMEOUT:
-                            print 'Try again...'
-
-
-def test_5g_wds(ap_list):
-    tests_done_5g_wds = set()
-    chain_list = ['3x3', '2x2', '1x1']
-    bw_list = [20, 40, 80]
+def test_wds(ap_list, chain_list, bw_list, band, channel):
+    tests_done = set()
 
     for ap1 in ap_list:
         for ap2 in ap_list:
@@ -252,26 +230,21 @@ def test_5g_wds(ap_list):
                 continue
 
             #check for symmetry
-            test_id = (ap1.hostname, ap2.hostname)
-            if test_id not in tests_done_5g_wds:
-                tests_done_5g_wds.add(test_id)
+            test_id_a = (ap1.hostname, ap2.hostname)
+            test_id_b = (ap2.hostname, ap1.hostname)
+            if test_id_a not in tests_done or test_id_b not in tests_done:
+                tests_done.add(test_id_a)
+                tests_done.add(test_id_b)
             else:
                 print 'skip test because of symmetry'
                 continue
 
-            test_id = (ap2.hostname, ap1.hostname)
-            if test_id not in tests_done_5g_wds:
-                tests_done_5g_wds.add(test_id)
-            else:
-                print 'skip test because of symmetry'
-                continue
-
-            for chain in chain_list:
+            for chain_a, chain_b in chain_list:
                 for bw in bw_list:
-                    print 'Wifi {} {} {}, {} to {}'.format(5, chain, bw, ap1.hostname, ap2.hostname)
+                    print 'Wifi {} {} {} {}, {} to {}'.format(band, chain_a, chain_b, bw, ap1.hostname, ap2.hostname)
                     while True:
                         try:
-                            run_test(ap1, ap2, band=5, chains=chain, channel=36, bw=bw, two_way=True)
+                            run_test(ap1, ap2, band=band, chain=chain_a, chain_b=chain_b, channel=channel, bw=bw, two_way=True)
                             break
                         except pexpect.EOF:
                             print 'Try again...'
@@ -314,8 +287,22 @@ def main():
     #reset ap states
     reset_ap_states(ap_list)
 
-    test_5g_wds(ap_list)
-    test_2g_apsta(ap_list)
+    chain_list = [('3x3', '3x3'), ('2x2', '2x2'), ('1x1', '1x1')]
+    bw_list = [20, 40, 80]
+    test_wds(ap_list, chain_list, bw_list, 5, 36)
+
+    chain_list = [('2x2', '2x2'), ('1x1', '1x1')]
+    bw_list = [20, 40]
+    test_apsta(ap_list, chain_list, bw_list, 2, 6)
+
+    chain_list = [('2x2', '1x1')]
+    bw_list = [20, 40]
+    test_apsta(ap_list, chain_list, bw_list, 2, 6)
+
+    chain_list = [('3x3', '2x2'), ('3x3', '1x1'), ('2x2', '1x1')]
+    bw_list = [20, 40, 80]
+    test_apsta(ap_list, chain_list, bw_list, 5, 36)
+
 
 if __name__ == '__main__':
     main()

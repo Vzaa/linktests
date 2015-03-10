@@ -5,6 +5,8 @@ import requests
 from apnode import ApNode
 from hp1910 import Switch1910
 import pyperf.pyperfapi as perf
+from inspect import currentframe, getframeinfo
+
 
 
 SOURCEIP = '192.168.2.201'
@@ -197,8 +199,12 @@ def reset_ap_states(ap_list):
                 break
             except pexpect.EOF:
                 print 'Try again...'
+                frameinfo = getframeinfo(currentframe())
+                print frameinfo.filename, frameinfo.lineno
             except pexpect.TIMEOUT:
                 print 'Try again...'
+                frameinfo = getframeinfo(currentframe())
+                print frameinfo.filename, frameinfo.lineno
 
 
 
@@ -217,8 +223,12 @@ def test_apsta(ap_list, chain_list, bw_list, band, channel):
                             break
                         except pexpect.EOF:
                             print 'Try again...'
+                            frameinfo = getframeinfo(currentframe())
+                            print frameinfo.filename, frameinfo.lineno
                         except pexpect.TIMEOUT:
                             print 'Try again...'
+                            frameinfo = getframeinfo(currentframe())
+                            print frameinfo.filename, frameinfo.lineno
 
 
 def test_wds(ap_list, chain_list, bw_list, band, channel):
@@ -248,8 +258,12 @@ def test_wds(ap_list, chain_list, bw_list, band, channel):
                             break
                         except pexpect.EOF:
                             print 'Try again...'
+                            frameinfo = getframeinfo(currentframe())
+                            print frameinfo.filename, frameinfo.lineno
                         except pexpect.TIMEOUT:
                             print 'Try again...'
+                            frameinfo = getframeinfo(currentframe())
+                            print frameinfo.filename, frameinfo.lineno
 
 
 def main():

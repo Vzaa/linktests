@@ -53,6 +53,7 @@ class Switch1910(object):
 
             self.c.sendline('quit')
         except pexpect.EOF:
+            print 'reestablish switch connection'
             self._connect()
             self.add_ports_to_vlan(vlan, ports)
 

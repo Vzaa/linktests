@@ -12,7 +12,7 @@ def wl_cmd(ifname, command):
 
 
 class ApNode(object):
-    def __init__(self, hostname, switchport,
+    def __init__(self, hostname, switchport=None,
                  if2g='wl0', if5g='wl1',
                  username='root', passwd=None, macs=None, sw=None):
         self.hostname = hostname

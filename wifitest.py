@@ -21,8 +21,10 @@ DUMMY_VLAN = 3
 SINK_VLAN = 4
 
 
-def run_udp(cli_ip, serv_ip, port=4444, duration=5, bw=500, band=5, ap_src=None, ap_sink=None, filename_base='/tmp/x'):
+def run_udp(cli_ip, serv_ip, port=4444, duration=30, bw=600, band=5, ap_src=None, ap_sink=None, filename_base='/tmp/x', sw=None):
     dev_log = []
+    sw.add_ports_to_vlan(CONTROL_VLAN, [SINKPORT])
+    os.system('arp -d ' + SINKIP)
     print 'start server'
     while True:
         try:
@@ -31,6 +33,8 @@ def run_udp(cli_ip, serv_ip, port=4444, duration=5, bw=500, band=5, ap_src=None,
         except requests.Timeout:
             continue
         break
+    sw.add_ports_to_vlan(SINK_VLAN, [SINKPORT])
+    os.system('arp -d ' + SINKIP)
     print 'start client'
     while True:
         try:
@@ -52,11 +56,21 @@ def run_udp(cli_ip, serv_ip, port=4444, duration=5, bw=500, band=5, ap_src=None,
 
     print 'done'
     print 'stop server'
-    perf.stop(serv_ip, port, serv_id)
-    print 'cli log get'
-    cli_log = perf.get_log(cli_ip, port, cli_id)
-    print 'server log get'
-    serv_log = perf.get_log(serv_ip, port, serv_id)
+
+    sw.add_ports_to_vlan(CONTROL_VLAN, [SINKPORT])
+    os.system('arp -d ' + SINKIP)
+    while True:
+        try:
+            perf.stop(serv_ip, port, serv_id)
+            print 'cli log get'
+            cli_log = perf.get_log(cli_ip, port, cli_id)
+            print 'server log get'
+            serv_log = perf.get_log(serv_ip, port, serv_id)
+        except requests.Timeout:
+            continue
+        break
+    sw.add_ports_to_vlan(SINK_VLAN, [SINKPORT])
+    os.system('arp -d ' + SINKIP)
 
     cli_log, serv_log, dev_log = (cli_log['log'], serv_log['log'], dev_log)
 
@@ -127,7 +141,7 @@ def run_test(ap1, ap2, band=5, channel=36, bw=80, chain='3x3', chain_b=None, use
         while True:
             try:
                 filename_base = '{}{}_{}_{}_{}g_ch{}_bw{}_{}_{}'.format(TARGET_DIR, TIMESTAMP, ap1.hostname, ap2.hostname, band, channel, bw, chain, chain_b)
-                run_udp(SOURCEIP, SINKIP, band=band, ap_src=ap1, ap_sink=ap2, filename_base=filename_base)
+                run_udp(SOURCEIP, SINKIP, band=band, ap_src=ap1, ap_sink=ap2, filename_base=filename_base, sw=ap1.sw)
             except requests.Timeout:
                 continue
             except requests.ConnectionError:
@@ -155,7 +169,7 @@ def run_test(ap1, ap2, band=5, channel=36, bw=80, chain='3x3', chain_b=None, use
                 while True:
                     try:
                         filename_base = '{}{}_{}_{}_{}g_ch{}_bw{}_{}_{}'.format(TARGET_DIR, TIMESTAMP, ap1.hostname, ap2.hostname, band, channel, bw, chain, chain_b)
-                        run_udp(SOURCEIP, SINKIP, band=band, ap_src=ap2, ap_sink=ap1, filename_base=filename_base)
+                        run_udp(SOURCEIP, SINKIP, band=band, ap_src=ap2, ap_sink=ap1, filename_base=filename_base, sw=ap1.sw)
                     except requests.Timeout:
                         continue
                     except requests.ConnectionError:
@@ -273,17 +287,17 @@ def main():
         pass
     sw = Switch1910('192.168.2.200', 'admin', 'admin')
 
-    for port in range(3, 17):
+    for port in range(3, 16):
         sw.add_ports_to_vlan(port + 10, [port])
 
     ap_list = []
     ap_list.append(ApNode(hostname='192.168.2.21', switchport=3, sw=sw))
     ap_list.append(ApNode(hostname='192.168.2.22', switchport=4, sw=sw))
     ap_list.append(ApNode(hostname='192.168.2.23', switchport=5, sw=sw))
-    #ap_list.append(ApNode(hostname='192.168.2.24', switchport=6, sw=sw))
-    #ap_list.append(ApNode(hostname='192.168.2.25', switchport=7, sw=sw))
-    #ap_list.append(ApNode(hostname='192.168.2.26', switchport=8, sw=sw))
-    #ap_list.append(ApNode(hostname='192.168.2.27', switchport=9, sw=sw))
+    ap_list.append(ApNode(hostname='192.168.2.24', switchport=6, sw=sw))
+    ap_list.append(ApNode(hostname='192.168.2.25', switchport=7, sw=sw))
+    ap_list.append(ApNode(hostname='192.168.2.26', switchport=8, sw=sw))
+    ap_list.append(ApNode(hostname='192.168.2.27', switchport=9, sw=sw))
 
     #put the sink to sink vlan
     sw.add_ports_to_vlan(SINK_VLAN, [SINKPORT])

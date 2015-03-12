@@ -45,6 +45,10 @@ class ApNode(object):
 
         if band == 5:
             cmd_list.append(wl_cmd(ifname, 'chanspec ' + str(channel) + '/' + str(bw)))
+            cmd_list.append(wl_cmd(ifname, 'radar 0'))
+            cmd_list.append(wl_cmd(ifname, 'spect 0'))
+            cmd_list.append(wl_cmd(ifname, 'dfs_preism 1'))
+            cmd_list.append(wl_cmd(ifname, 'dfs_postism 1'))
         else:
             cmd_list.append(wl_cmd(ifname, 'chanspec -s 0 -b 2 -c ' + str(channel) + ' -w ' + str(bw)))
 

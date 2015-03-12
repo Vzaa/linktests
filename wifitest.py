@@ -168,7 +168,7 @@ def run_test(ap1, ap2, band=5, channel=36, bw=80, chain='3x3', chain_b=None, use
                 print 'start second test'
                 while True:
                     try:
-                        filename_base = '{}{}_{}_{}_{}g_ch{}_bw{}_{}_{}'.format(TARGET_DIR, TIMESTAMP, ap1.hostname, ap2.hostname, band, channel, bw, chain, chain_b)
+                        filename_base = '{}{}_{}_{}_{}g_ch{}_bw{}_{}_{}'.format(TARGET_DIR, TIMESTAMP, ap2.hostname, ap1.hostname, band, channel, bw, chain, chain_b)
                         run_udp(SOURCEIP, SINKIP, band=band, ap_src=ap2, ap_sink=ap1, filename_base=filename_base, sw=ap1.sw)
                     except requests.Timeout:
                         continue
@@ -303,11 +303,13 @@ def main():
     sw.add_ports_to_vlan(SINK_VLAN, [SINKPORT])
 
     reset_ap_states(ap_list)
+    #sw.add_ports_to_vlan(CONTROL_VLAN, [3])
+
 
     #symmetric 5g wds tests
     chain_list = [('3x3', '3x3'), ('2x2', '2x2'), ('1x1', '1x1')]
     bw_list = [20, 40, 80]
-    test_wds(ap_list, chain_list, bw_list, 5, 36)
+    test_wds(ap_list, chain_list, bw_list, 5, 100)
 
     #symmetric 2g ap-sta tests
     chain_list = [('2x2', '2x2'), ('1x1', '1x1')]
@@ -322,7 +324,8 @@ def main():
     #non-symmetric 5g ap-sta tests
     chain_list = [('3x3', '2x2'), ('3x3', '1x1'), ('2x2', '1x1')]
     bw_list = [20, 40, 80]
-    test_apsta(ap_list, chain_list, bw_list, 5, 36)
+    test_apsta(ap_list, chain_list, bw_list, 5, 100)
+
 
 
 if __name__ == '__main__':

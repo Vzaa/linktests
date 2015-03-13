@@ -84,7 +84,7 @@ class ApNode(object):
         cmd_list.append(wl_cmd(ifname, 'assoclist'))
         self.run_command(cmd_list)
 
-    def sta_mode(self, extra_cmds=None, band=5):
+    def sta_mode(self, extra_cmds=None, band=5, ssid='kedi'):
         ifname = self.ifs[band]
         cmd_list = []
         cmd_list.append(wl_cmd(ifname, 'down'))
@@ -92,8 +92,8 @@ class ApNode(object):
         if extra_cmds is not None:
             cmd_list = cmd_list + extra_cmds
         cmd_list.append(wl_cmd(ifname, 'up'))
-        cmd_list.append(wl_cmd(ifname, 'scan -s kedi'))
-        cmd_list.append(wl_cmd(ifname, 'join kedi'))
+        cmd_list.append(wl_cmd(ifname, 'scan -s %s' % ssid))
+        cmd_list.append(wl_cmd(ifname, 'join %s' % ssid))
         cmd_list.append(wl_cmd(ifname, 'wet 1'))
         cmd_list.append(wl_cmd(ifname, 'status'))
         self.run_command(cmd_list)

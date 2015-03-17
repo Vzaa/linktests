@@ -118,7 +118,7 @@ def run_test(ap2, port, band=5, channel=36, ssid=''):
     dev_log += ap2.get_rssi_nrate(' ', band=band)
     dev_log += ap2.get_rssi_nrate(' ', band=band)
 
-    filename_base = '{}{}_{}_{}g_ch{}'.format(TARGET_DIR, TIMESTAMP, ap2.hostname, band, channel)
+    filename_base = '{}{}_{}_{}g_ch{}_{}'.format(TARGET_DIR, TIMESTAMP, ap2.hostname, band, channel, port)
     with open(filename_base + '_rssi.log', 'w') as writer:
         for item in dev_log:
             writer.write(item.strip() + '\n')
@@ -201,8 +201,8 @@ def main():
     #sw.add_ports_to_vlan(CONTROL_VLAN, [3])
 
     #symmetric 2g ap-sta tests
-    test_apsta(ap_list, PORTA, 5, 36, 'domates_a_5')
-    test_apsta(ap_list, PORTB, 5, 36, 'domates_b_5')
+    test_apsta(ap_list, PORTA, 5, 44, 'domates_a_5')
+    test_apsta(ap_list, PORTB, 5, 44, 'domates_b_5')
     test_apsta(ap_list, PORTA, 2, 6, 'domates_a_2')
     test_apsta(ap_list, PORTB, 2, 6, 'domates_b_2')
 

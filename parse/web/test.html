@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<head>
+<meta charset="utf-8">
+<title>test</title>
+<link rel="stylesheet" href="entireframework.min.css" type="text/css" media="all" />
+<link rel="stylesheet" href="style.css" type="text/css" media="all" />
+</head>
+
+<body onLoad='test()'>
+
+<nav class="nav" tabindex="-1" onclick="this.focus()">
+    <div class="container">
+        <a class="pagename current" href="#">Test</a>
+        <!--<a href="#">One</a>-->
+    </div>
+</nav>
+<button class="btn-close btn btn-sm">×</button>
+<div class="container">
+    <div class="row">
+        <div class="col c12">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>AP #</th>
+                        <th>AP Role</th>
+                        <th>2G Capabilities</th>
+                        <th>5G Capabilities</th>
+                    </tr>
+                </thead>
+                <tbody id="aptable">
+                </tbody>
+            </table>
+            <div id="selects">
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="tocenter col c12">
+            <a class="tocenter btn btn-b btn smooth" onclick="calculate_routes()">Calculate Routes</a>
+        </div>
+    </div>
+    <div class="row">
+        <div class="tocenter col c12">
+            <textarea id="result" rows="6" class="smooth"> </textarea>
+        </div>
+    </div>
+</div>
+<script src="zepto.min.js"></script>
+<script src="dat.js"></script>
+<script src="test.js"></script>
+</body>
+

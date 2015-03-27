@@ -89,6 +89,12 @@ def run_udp(cli_ip, serv_ip, port=4444, duration=30, bw=600, band=5, ap_src=None
 
 def run_test(ap1, ap2, band=5, channel=36, bw=80, chain='3x3', chain_b=None, use_apsta=False, two_way=False):
 
+    link_type = ''
+    if use_apsta:
+        link_type = 'apsta'
+    else:
+        link_type = 'wds'
+
     # config ap1
     ap1.to_control_vlan()
     ap1.enable_radio(band=band)
@@ -125,11 +131,12 @@ def run_test(ap1, ap2, band=5, channel=36, bw=80, chain='3x3', chain_b=None, use
     os.system('arp -d ' + SINKIP)
     os.system('arp -d ' + ap1.hostname)
     os.system('arp -d ' + ap2.hostname)
-    ap1.ping(ap2.hostname)
-    ap1.ping(SINKIP)
+    #don't ping from aps as it takes long
+    #ap1.ping(ap2.hostname)
+    #ap1.ping(SINKIP)
 
     ret = 1
-    for e in xrange(10):
+    for e in xrange(15):
         ret = os.system('ping -c 1 ' + SINKIP)
         if ret == 0:
             break
@@ -140,7 +147,7 @@ def run_test(ap1, ap2, band=5, channel=36, bw=80, chain='3x3', chain_b=None, use
     else:
         while True:
             try:
-                filename_base = '{}{}_{}_{}_{}g_ch{}_bw{}_{}_{}'.format(TARGET_DIR, TIMESTAMP, ap1.hostname, ap2.hostname, band, channel, bw, chain, chain_b)
+                filename_base = '{}{}_{}_{}_{}g_ch{}_bw{}_{}_{}_{}'.format(TARGET_DIR, TIMESTAMP, ap1.hostname, ap2.hostname, band, channel, bw, chain, chain_b, link_type)
                 run_udp(SOURCEIP, SINKIP, band=band, ap_src=ap1, ap_sink=ap2, filename_base=filename_base, sw=ap1.sw)
             except requests.Timeout:
                 continue
@@ -168,7 +175,7 @@ def run_test(ap1, ap2, band=5, channel=36, bw=80, chain='3x3', chain_b=None, use
                 print 'start second test'
                 while True:
                     try:
-                        filename_base = '{}{}_{}_{}_{}g_ch{}_bw{}_{}_{}'.format(TARGET_DIR, TIMESTAMP, ap2.hostname, ap1.hostname, band, channel, bw, chain, chain_b)
+                        filename_base = '{}{}_{}_{}_{}g_ch{}_bw{}_{}_{}_{}'.format(TARGET_DIR, TIMESTAMP, ap1.hostname, ap2.hostname, band, channel, bw, chain, chain_b, link_type)
                         run_udp(SOURCEIP, SINKIP, band=band, ap_src=ap2, ap_sink=ap1, filename_base=filename_base, sw=ap1.sw)
                     except requests.Timeout:
                         continue
@@ -310,6 +317,11 @@ def main():
     chain_list = [('3x3', '3x3'), ('2x2', '2x2'), ('1x1', '1x1')]
     bw_list = [20, 40, 80]
     test_wds(ap_list, chain_list, bw_list, 5, 100)
+
+    #symmetric 5g ap_sta tests
+    chain_list = [('3x3', '3x3'), ('2x2', '2x2'), ('1x1', '1x1')]
+    bw_list = [20, 40, 80]
+    test_apsta(ap_list, chain_list, bw_list, 5, 100)
 
     #symmetric 2g ap-sta tests
     chain_list = [('2x2', '2x2'), ('1x1', '1x1')]

@@ -213,8 +213,6 @@ function find_best_route(src_idx, dest_idx, mps) {
 
     var min_idx = costs.indexOf(Math.min.apply(Math, costs));
 
-    var str = JSON.stringify(paths, null, 2);
-
     //console.log(paths);
     return paths[min_idx];
 }

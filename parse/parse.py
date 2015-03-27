@@ -273,11 +273,11 @@ def main():
                 if len(filtered) == 0 :
                     continue
                 mat = get_dat_matrix(tests, testid, nodes, '2g', bw, chain_src, chain_dst)
-                filename = "%s_%s_%s_%s" % ('2g', chain_src, chain_dst, bw)
+                filename = "%s_%s_%s_%s_%s" % ('2g', chain_src, chain_dst, bw, 'apsta')
                 plt.clf()
                 plot_heatmap(mat, filename, dirname, testid)
                 mat = get_rssi_mat(tests, testid, nodes, '2g', bw, chain_src, chain_dst)
-                filename = "%s_%s_%s_%s_rssi" % ('2g', chain_src, chain_dst, bw)
+                filename = "%s_%s_%s_%s_%s_rssi" % ('2g', chain_src, chain_dst, bw, 'apsta')
                 plt.clf()
                 plot_heatmap(mat, filename, dirname, testid, -100, 0)
         nodes = sorted(get_unique_nodes(tests, testid, 'plc'))

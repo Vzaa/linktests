@@ -175,7 +175,7 @@ def run_test(ap1, ap2, band=5, channel=36, bw=80, chain='3x3', chain_b=None, use
                 print 'start second test'
                 while True:
                     try:
-                        filename_base = '{}{}_{}_{}_{}g_ch{}_bw{}_{}_{}_{}'.format(TARGET_DIR, TIMESTAMP, ap1.hostname, ap2.hostname, band, channel, bw, chain, chain_b, link_type)
+                        filename_base = '{}{}_{}_{}_{}g_ch{}_bw{}_{}_{}_{}'.format(TARGET_DIR, TIMESTAMP, ap2.hostname, ap1.hostname, band, channel, bw, chain, chain_b, link_type)
                         run_udp(SOURCEIP, SINKIP, band=band, ap_src=ap2, ap_sink=ap1, filename_base=filename_base, sw=ap1.sw)
                     except requests.Timeout:
                         continue

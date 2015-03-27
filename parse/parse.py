@@ -39,6 +39,19 @@ def get_info_from_filename(filename):
     parts = filename.split('_')
     info = dict()
 
+    if len(parts) == 15:
+        info['filename'] = filename
+        info['testid'] = ''.join(parts[0:6])
+        info['src'] = parts[6]
+        info['dest'] = parts[7]
+        info['band'] = parts[8]
+        info['channel'] = parts[9]
+        info['bw'] = parts[10]
+        info['chain_src'] = parts[11]
+        info['chain_dst'] = parts[12]
+        info['type'] = parts[13].split('.')[0]
+        info['link'] = parts[14]
+        info['medium'] = 'wifi'
     if len(parts) == 14:
         info['filename'] = filename
         info['testid'] = ''.join(parts[0:6])
@@ -50,6 +63,7 @@ def get_info_from_filename(filename):
         info['chain_src'] = parts[11]
         info['chain_dst'] = parts[12]
         info['type'] = parts[13].split('.')[0]
+        info['link'] = 'na'
         info['medium'] = 'wifi'
     elif len(parts) == 13:
         info['filename'] = filename
@@ -62,6 +76,7 @@ def get_info_from_filename(filename):
         info['chain_src'] = parts[11]
         info['chain_dst'] = parts[11]
         info['type'] = parts[12].split('.')[0]
+        info['link'] = 'na'
         info['medium'] = 'wifi'
     elif len(parts) == 10:
         info['filename'] = filename
@@ -69,6 +84,7 @@ def get_info_from_filename(filename):
         info['src'] = parts[6]
         info['dest'] = parts[7]
         info['type'] = parts[9].split('.')[0]
+        info['link'] = 'na'
         info['medium'] = 'plc'
     else:
         print filename, len(parts)
@@ -225,25 +241,28 @@ def main():
     bw_2g = ['bw20', 'bw40']
     bw_5g = ['bw20', 'bw40', 'bw80']
 
+    linktypes = ['wds', 'apsta', 'na']
+
 
     for testid in testids:
         nodes = sorted(get_unique_nodes(tests, testid, 'wifi'))
         for bw in bw_5g:
             for (chain_src, chain_dst) in ch_5g:
-                try:
-                    filtered = [test for test in tests if test['testid'] == testid and test['band'] == '5g']
-                except KeyError:
-                    continue
-                if len(filtered) == 0 :
-                    continue
-                mat = get_dat_matrix(tests, testid, nodes, '5g', bw, chain_src, chain_dst)
-                filename = "%s_%s_%s_%s" % ('5g', chain_src, chain_dst, bw)
-                plt.clf()
-                plot_heatmap(mat, filename, dirname, testid)
-                mat = get_rssi_mat(tests, testid, nodes, '5g', bw, chain_src, chain_dst)
-                filename = "%s_%s_%s_%s_rssi" % ('5g', chain_src, chain_dst, bw)
-                plt.clf()
-                plot_heatmap(mat, filename, dirname, testid, -100, 0)
+                for linktype in linktypes:
+                    try:
+                        filtered = [test for test in tests if test['testid'] == testid and test['band'] == '5g' and test['link'] == linktype]
+                    except KeyError:
+                        continue
+                    if len(filtered) == 0 :
+                        continue
+                    mat = get_dat_matrix(filtered, testid, nodes, '5g', bw, chain_src, chain_dst)
+                    filename = "%s_%s_%s_%s_%s" % ('5g', chain_src, chain_dst, bw, linktype)
+                    plt.clf()
+                    plot_heatmap(mat, filename, dirname, testid)
+                    mat = get_rssi_mat(filtered, testid, nodes, '5g', bw, chain_src, chain_dst)
+                    filename = "%s_%s_%s_%s_%s_rssi" % ('5g', chain_src, chain_dst, bw, linktype)
+                    plt.clf()
+                    plot_heatmap(mat, filename, dirname, testid, -100, 0)
 
         for bw in bw_2g:
             for (chain_src, chain_dst) in ch_2g:

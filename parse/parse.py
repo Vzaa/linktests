@@ -39,16 +39,40 @@ def get_info_from_filename(filename):
     parts = filename.split('_')
     info = dict()
 
-    info['filename'] = filename
-    info['testid'] = ''.join(parts[0:6])
-    info['src'] = parts[6]
-    info['dest'] = parts[7]
-    info['band'] = parts[8]
-    info['channel'] = parts[9]
-    info['bw'] = parts[10]
-    info['chain_src'] = parts[11]
-    info['chain_dst'] = parts[12]
-    info['type'] = parts[13].split('.')[0]
+    if len(parts) == 14:
+        info['filename'] = filename
+        info['testid'] = ''.join(parts[0:6])
+        info['src'] = parts[6]
+        info['dest'] = parts[7]
+        info['band'] = parts[8]
+        info['channel'] = parts[9]
+        info['bw'] = parts[10]
+        info['chain_src'] = parts[11]
+        info['chain_dst'] = parts[12]
+        info['type'] = parts[13].split('.')[0]
+        info['medium'] = 'wifi'
+    elif len(parts) == 13:
+        info['filename'] = filename
+        info['testid'] = ''.join(parts[0:6])
+        info['src'] = parts[6]
+        info['dest'] = parts[7]
+        info['band'] = parts[8]
+        info['channel'] = parts[9]
+        info['bw'] = parts[10]
+        info['chain_src'] = parts[11]
+        info['chain_dst'] = parts[11]
+        info['type'] = parts[12].split('.')[0]
+        info['medium'] = 'wifi'
+    elif len(parts) == 10:
+        info['filename'] = filename
+        info['testid'] = ''.join(parts[0:6])
+        info['src'] = parts[6]
+        info['dest'] = parts[7]
+        info['type'] = parts[9].split('.')[0]
+        info['medium'] = 'plc'
+    else:
+        print filename, len(parts)
+        return None
     return info
 
 
@@ -71,25 +95,36 @@ def get_rssi_vals(filename):
 def gen_test_dict(dirname, filename):
     "return a filled dictionary from a file"
     test = get_info_from_filename(filename)
+    if test == None:
+        return None
+
     if test['type'] == 'serv' or test['type'] == 'cli':
         test['dat'] = get_data_from_file(dirname + test['filename'])
         #test['dat_avg'] = sum([tput for secs, tput in test['dat']]) / len(test['dat'])
         test['dat'] = sum([tput for secs, tput in test['dat']]) / len(test['dat'])
-    elif test['type'] == 'dev':
+    elif test['type'] == 'dev' and test['medium'] == 'wifi':
         test['rssi'] = get_rssi_vals(dirname + test['filename'])
         test['rssi'] = sum(test['rssi']) / len(test['rssi'])
     return test
 
 
-def filter_tests(tests, testid, band, bw, chain_src, chain_dst, t_type):
+def filter_tests(tests, testid, band, bw, chain_src, chain_dst, t_type, medium='wifi'):
     "filter tests"
-    filtered = [test for test in tests
+    filtered = None
+    if medium == 'wifi':
+        filtered = [test for test in tests
                 if test['testid'] == testid and
+                test['medium'] == 'wifi' and
                 test['chain_src'] == chain_src and
                 test['chain_dst'] == chain_dst and
                 test['type'] == t_type and
                 test['bw'] == bw and
                 test['band'] == band]
+    elif medium == 'plc':
+        filtered = [test for test in tests
+                if test['testid'] == testid and
+                test['medium'] == 'plc' and
+                test['type'] == t_type]
     return filtered
 
 
@@ -99,6 +134,8 @@ def parse_dir(dirname):
     tests = list()
     for filename in filenames:
         test = gen_test_dict(dirname, filename)
+        if test == None:
+            continue
         tests.append(test)
     return tests
 
@@ -110,16 +147,21 @@ def get_unique_testids(tests):
         testids.add(test['testid'])
     return list(testids)
 
-def get_unique_nodes(tests):
+def get_unique_nodes(tests, testid, medium):
     "return a list of unique nodes in a tests list"
     nodes = set()
-    for test in tests:
+    filtered = [test for test in tests
+            if test['testid'] == testid and
+            test['medium'] == medium]
+    for test in filtered:
         nodes.add(test['src'])
         nodes.add(test['dest'])
     return list(nodes)
 
 
-def plot_heatmap(mat, filename, vmin=0, vmax=600):
+def plot_heatmap(mat, filename, dirname, testid, vmin=0, vmax=600):
+    if len(mat) == 0:
+        return
     vals = []
     column_names = range(1, 8)
     for i, row in enumerate(mat):
@@ -136,11 +178,11 @@ def plot_heatmap(mat, filename, vmin=0, vmax=600):
     #plt.show()
     #exit()
 
-    plt.savefig('./plots/%s.png' % filename)
+    plt.savefig('%s/../plots/%s_%s.png' % (dirname, testid, filename))
 
-def get_dat_matrix(tests, testid, nodes, band, bw, chain_src, chain_dst):
+def get_dat_matrix(tests, testid, nodes, band, bw, chain_src, chain_dst, medium='wifi'):
     mat = []
-    table = filter_tests(tests, testid, band, bw, chain_src, chain_dst, 'serv')
+    table = filter_tests(tests, testid, band, bw, chain_src, chain_dst, 'serv', medium=medium)
     for node_a in nodes:
         row = []
         for node_b in nodes:
@@ -169,39 +211,64 @@ def get_rssi_mat(tests, testid, nodes, band, bw, chain_src, chain_dst):
 
 def main():
     "main"
-    tests = parse_dir('./5th_floor_logs/')
+    dirname = './5th_floor_logs/'
+    tests = parse_dir(dirname)
     testids = get_unique_testids(tests)
+
+
+    #ch_5g = [('3x3', '3x3'), ('2x2', '2x2'), ('1x1', '1x1')]
+    #ch_2g = [('2x2', '2x2'), ('1x1', '1x1')]
+    #ch_2g = [('3x3', '3x3'), ('2x2', '2x2'), ('1x1', '1x1')]
 
     ch_5g = [('3x3', '3x3'), ('2x2', '2x2'), ('1x1', '1x1'), ('3x3', '2x2'), ('3x3', '1x1'), ('2x2', '1x1')]
     ch_2g = [('2x2', '2x2'), ('1x1', '1x1'), ('2x2', '1x1')]
-
     bw_2g = ['bw20', 'bw40']
     bw_5g = ['bw20', 'bw40', 'bw80']
 
 
     for testid in testids:
-        nodes = get_unique_nodes(tests) #TODO: check testid
+        nodes = sorted(get_unique_nodes(tests, testid, 'wifi'))
         for bw in bw_5g:
             for (chain_src, chain_dst) in ch_5g:
+                try:
+                    filtered = [test for test in tests if test['testid'] == testid and test['band'] == '5g']
+                except KeyError:
+                    continue
+                if len(filtered) == 0 :
+                    continue
                 mat = get_dat_matrix(tests, testid, nodes, '5g', bw, chain_src, chain_dst)
                 filename = "%s_%s_%s_%s" % ('5g', chain_src, chain_dst, bw)
                 plt.clf()
-                plot_heatmap(mat, filename)
+                plot_heatmap(mat, filename, dirname, testid)
                 mat = get_rssi_mat(tests, testid, nodes, '5g', bw, chain_src, chain_dst)
                 filename = "%s_%s_%s_%s_rssi" % ('5g', chain_src, chain_dst, bw)
                 plt.clf()
-                plot_heatmap(mat, filename, -100, 0)
+                plot_heatmap(mat, filename, dirname, testid, -100, 0)
 
         for bw in bw_2g:
             for (chain_src, chain_dst) in ch_2g:
+                try:
+                    filtered = [test for test in tests if test['testid'] == testid and test['band'] == '2g']
+                except KeyError:
+                    continue
+                if len(filtered) == 0 :
+                    continue
                 mat = get_dat_matrix(tests, testid, nodes, '2g', bw, chain_src, chain_dst)
                 filename = "%s_%s_%s_%s" % ('2g', chain_src, chain_dst, bw)
                 plt.clf()
-                plot_heatmap(mat, filename)
+                plot_heatmap(mat, filename, dirname, testid)
                 mat = get_rssi_mat(tests, testid, nodes, '2g', bw, chain_src, chain_dst)
                 filename = "%s_%s_%s_%s_rssi" % ('2g', chain_src, chain_dst, bw)
                 plt.clf()
-                plot_heatmap(mat, filename, -100, 0)
+                plot_heatmap(mat, filename, dirname, testid, -100, 0)
+        nodes = sorted(get_unique_nodes(tests, testid, 'plc'))
+        if len(nodes) == 0:
+            continue
+        #nodes.append(nodes.pop(0))
+        mat = get_dat_matrix(tests, testid, nodes, '2g', bw, chain_src, chain_dst, medium='plc')
+        filename = "%s" % ('plc')
+        plt.clf()
+        plot_heatmap(mat, filename, dirname, testid)
 
         test_dat = [test for test in tests
                 if test['testid'] == testid and (test['type'] == 'serv' or test['type'] == 'dev')]

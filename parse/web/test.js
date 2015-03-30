@@ -11,6 +11,14 @@ var nodes = [
     {"id": 7, "ip": "192.168.2.27", "bw_2g" : "bw40", "bw_5g" : "bw80", "chain_2g" : "2x2", "chain_5g" : "3x3", "role": "mp"}
 ];
 
+function node_by_id(id) {
+    for (var i = nodes.length - 1; i >= 0; i--) {
+        if (nodes[i].id == id) {
+            return nodes[i];
+        }
+    }
+}
+
 function get_test(src, dest, chain_src, chain_dst, band, bw) {
     "use strict";
     if (chain_src === "1x1" && chain_dst === "2x2") {
@@ -38,32 +46,32 @@ function get_test(src, dest, chain_src, chain_dst, band, bw) {
 
 function change_role(id) {
     "use strict";
-    nodes[id - 1].role = $("#role_" + id).val();
+    node_by_id(id).role = $("#role_" + id).val();
 }
 
 function change_bw_2g(id) {
     "use strict";
-    nodes[id - 1].bw_2g = $("#bw_2g_" + id).val();
+    node_by_id(id).bw_2g = $("#bw_2g_" + id).val();
 }
 
 function change_bw_5g(id) {
     "use strict";
-    nodes[id - 1].bw_5g = $("#bw_5g_" + id).val();
+    node_by_id(id).bw_5g = $("#bw_5g_" + id).val();
 }
 
 function change_chain_5g(id) {
     "use strict";
-    nodes[id - 1].chain_5g = $("#ch_5g_" + id).val();
+    node_by_id(id).chain_5g = $("#ch_5g_" + id).val();
 }
 
 function change_chain_2g(id) {
     "use strict";
-    nodes[id - 1].chain_2g = $("#ch_2g_" + id).val();
+    node_by_id(id).chain_2g = $("#ch_2g_" + id).val();
 }
 
 function change_chain_5g(id) {
     "use strict";
-    nodes[id - 1].chain_5g = $("#ch_5g_" + id).val();
+    node_by_id(id).chain_5g = $("#ch_5g_" + id).val();
 }
 
 function get_src_dst_pairs() {
@@ -72,13 +80,13 @@ function get_src_dst_pairs() {
     var dests = [];
     var pairs = [];
 
-    nodes.forEach(function (node) {
-        if (node.role === "sta_2g" || node.role === "sta_5g") {
-            dests.push(node.id - 1);
-        } else if (node.role === "gw") {
-            srcs.push(node.id - 1);
+    for (var i = 0; i < nodes.length; i++) {
+        if (nodes[i].role === "sta_2g" || nodes[i].role === "sta_5g") {
+            dests.push(i);
+        } else if (nodes[i].role === "gw") {
+            srcs.push(i);
         }
-    });
+    }
 
     srcs.forEach(function (src) {
         dests.forEach(function (dest) {
@@ -92,11 +100,11 @@ function get_src_dst_pairs() {
 function get_mps() {
     "use strict";
     var mps = [];
-    nodes.forEach(function (node) {
-        if (node.role === "mp") {
-            mps.push(node.id - 1);
+    for (var i = 0; i < nodes.length; i++) {
+        if (nodes[i].role === "mp") {
+            mps.push(i);
         }
-    });
+    }
     return mps;
 }
 
@@ -118,9 +126,10 @@ function get_perms(arr, l) {
         var elem = small_arr.splice(i, 1);
         var sub_perms = get_perms(small_arr, l - 1);
 
-        sub_perms.forEach(function (perm) {
-            perm_list.push(elem.concat(perm));
-        });
+        for (i = 0, len = sub_perms.length; i < len; i++) {
+            perm_list.push(elem.concat(sub_perms[i]));
+        }
+
     }
     return perm_list;
 }
@@ -165,7 +174,6 @@ function path_to_str(path) {
     "use strict";
     var res_str = "";
     path.forEach(function (hop) {
-        //res_str += " (" + nodes[hop.src].id + " -> " + nodes[hop.dest].id + " , " + hop.tput + ")";
         res_str += " (" + nodes[hop.src].id + " -> " + nodes[hop.dest].id + " , " + Math.round(hop.tput * 100) / 100 + ")";
     });
     return res_str;

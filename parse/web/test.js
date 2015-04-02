@@ -2,18 +2,18 @@
 /*global $, jQuery*/
 
 var nodes = [
-    {"id": 1, "ip": "192.168.2.21", "bw_2g" : "bw40", "bw_5g" : "bw80", "chain_2g" : "2x2", "chain_5g" : "3x3", "role": "mp"},
-    {"id": 2, "ip": "192.168.2.22", "bw_2g" : "bw40", "bw_5g" : "bw80", "chain_2g" : "2x2", "chain_5g" : "3x3", "role": "gw"},
-    {"id": 3, "ip": "192.168.2.23", "bw_2g" : "bw40", "bw_5g" : "bw80", "chain_2g" : "2x2", "chain_5g" : "3x3", "role": "mp"},
-    {"id": 4, "ip": "192.168.2.24", "bw_2g" : "bw40", "bw_5g" : "bw80", "chain_2g" : "2x2", "chain_5g" : "3x3", "role": "mp"},
-    {"id": 5, "ip": "192.168.2.25", "bw_2g" : "bw40", "bw_5g" : "bw80", "chain_2g" : "2x2", "chain_5g" : "3x3", "role": "sta_5g"},
-    {"id": 6, "ip": "192.168.2.26", "bw_2g" : "bw40", "bw_5g" : "bw80", "chain_2g" : "2x2", "chain_5g" : "1x1", "role": "mp"},
-    {"id": 7, "ip": "192.168.2.27", "bw_2g" : "bw40", "bw_5g" : "bw80", "chain_2g" : "2x2", "chain_5g" : "3x3", "role": "mp"}
+    {"id": 1, "ip": "192.168.2.21", "bw_2g" : "bw40", "bw_5g" : "bw80", "chain_2g" : "2x2", "chain_5g" : "3x3", "plc": "no_plc", "role": "mp"},
+    {"id": 2, "ip": "192.168.2.22", "bw_2g" : "bw40", "bw_5g" : "bw80", "chain_2g" : "2x2", "chain_5g" : "3x3", "plc": "no_plc", "role": "gw"},
+    {"id": 3, "ip": "192.168.2.23", "bw_2g" : "bw40", "bw_5g" : "bw80", "chain_2g" : "2x2", "chain_5g" : "3x3", "plc": "no_plc", "role": "mp"},
+    {"id": 4, "ip": "192.168.2.24", "bw_2g" : "bw40", "bw_5g" : "bw80", "chain_2g" : "2x2", "chain_5g" : "3x3", "plc": "no_plc", "role": "mp"},
+    {"id": 5, "ip": "192.168.2.25", "bw_2g" : "bw40", "bw_5g" : "bw80", "chain_2g" : "2x2", "chain_5g" : "3x3", "plc": "no_plc", "role": "sta_5g"},
+    {"id": 6, "ip": "192.168.2.26", "bw_2g" : "bw40", "bw_5g" : "bw80", "chain_2g" : "2x2", "chain_5g" : "1x1", "plc": "no_plc", "role": "mp"},
+    {"id": 7, "ip": "192.168.2.27", "bw_2g" : "bw40", "bw_5g" : "bw80", "chain_2g" : "2x2", "chain_5g" : "3x3", "plc": "no_plc", "role": "mp"}
 ];
 
 function node_by_id(id) {
     for (var i = nodes.length - 1; i >= 0; i--) {
-        if (nodes[i].id == id) {
+        if (nodes[i].id === id) {
             return nodes[i];
         }
     }
@@ -46,7 +46,38 @@ function get_test(src, dest, chain_src, chain_dst, band, bw) {
 
 function change_role(id) {
     "use strict";
-    node_by_id(id).role = $("#role_" + id).val();
+    var new_role = $("#role_" + id).val();
+    node_by_id(id).role = new_role;
+    if (new_role === "sta_2g") {
+        $("#ch_2g_" + id).css({"visibility":"visible"});
+        $("#bw_2g_" + id).css({"visibility":"visible"});
+        $("#ch_5g_" + id).css({"visibility":"hidden"});
+        $("#bw_5g_" + id).css({"visibility":"hidden"});
+        $("#plc_" + id).css({"visibility":"hidden"});
+    } else if (new_role === "sta_5g") {
+        $("#ch_2g_" + id).css({"visibility":"hidden"});
+        $("#bw_2g_" + id).css({"visibility":"hidden"});
+        $("#ch_5g_" + id).css({"visibility":"visible"});
+        $("#bw_5g_" + id).css({"visibility":"visible"});
+        $("#plc_" + id).css({"visibility":"hidden"});
+    } else if (new_role === "none") {
+        $("#ch_2g_" + id).css({"visibility":"hidden"});
+        $("#bw_2g_" + id).css({"visibility":"hidden"});
+        $("#ch_5g_" + id).css({"visibility":"hidden"});
+        $("#bw_5g_" + id).css({"visibility":"hidden"});
+        $("#plc_" + id).css({"visibility":"hidden"});
+    } else {
+        $("#ch_2g_" + id).css({"visibility":"visible"});
+        $("#bw_2g_" + id).css({"visibility":"visible"});
+        $("#ch_5g_" + id).css({"visibility":"visible"});
+        $("#bw_5g_" + id).css({"visibility":"visible"});
+        $("#plc_" + id).css({"visibility":"visible"});
+    }
+}
+
+function change_plc(id) {
+    "use strict";
+    node_by_id(id).plc = $("#plc_" + id).val();
 }
 
 function change_bw_2g(id) {
@@ -138,7 +169,7 @@ function hop_calc_tput(hop) {
     "use strict";
     var src_node = nodes[hop.src];
     var dest_node = nodes[hop.dest];
-    var dat = 0;
+    var dat = 0.0001;
 
     var bw = "bw20";
 
@@ -149,13 +180,14 @@ function hop_calc_tput(hop) {
             bw = dest_node.bw_2g;
         }
         dat = get_test(src_node.ip, dest_node.ip, src_node.chain_2g, dest_node.chain_2g, hop.band, bw);
-    } else {
+    } else if (hop.band === "5g") {
         if (src_node.bw_5g < dest_node.bw_5g) {
             bw = src_node.bw_5g;
         } else {
             bw = dest_node.bw_5g;
         }
         dat = get_test(src_node.ip, dest_node.ip, src_node.chain_5g, dest_node.chain_5g, hop.band, bw);
+    } else if (hop.band === "plc") {
     }
 
     hop.tput = dat;
@@ -179,6 +211,26 @@ function path_to_str(path) {
     return res_str;
 }
 
+function nth_bit(in_val, n) {
+    return (in_val >> n) & 1;
+}
+
+function get_all_links(link_cnt) {
+    var link_arr = [];
+    for (var i = 0; i < Math.pow(2, link_cnt); i++) {
+        var new_arr = [];
+        for (var j = 0; j < link_cnt; j++) {
+            if (nth_bit(i, j) === 1) {
+                new_arr.push('5g');
+            } else {
+                new_arr.push('plc');
+            }
+        }
+        link_arr.push(new_arr);
+    }
+    return link_arr;
+}
+
 function find_best_route(src_idx, dest_idx, mps) {
     "use strict";
     var route_nodes = [[]];
@@ -195,24 +247,26 @@ function find_best_route(src_idx, dest_idx, mps) {
 
     //convert route_nodes to hop objects with "src", "dest" , "tput"
     route_nodes.forEach(function (route) {
-        var hops = [];
-        var current_node = src_idx;
-        route.forEach(function (node) {
-            var hop = {"src" : current_node, "dest" : node, "tput" : 0, "band" : "5g"};
+        var all_links = get_all_links(route.length);
+
+        for (var i = 0; i < all_links.length; i++) {
+            var hops = [];
+            var current_node = src_idx;
+            for (var j = 0; j < route.length; j++) {
+                var hop = {"src" : current_node, "dest" : route[j], "tput" : 0, "band" : all_links[i][j]};
+                hop_calc_tput(hop);
+                hops.push(hop);
+                current_node = route[j];
+            }
+
+            var hop = {"src" : current_node, "dest" : dest_idx, "tput": 0, "band" : "2g"};
+            if (nodes[dest_idx].role === 'sta_5g') {
+                hop.band = "5g";
+            }
             hop_calc_tput(hop);
             hops.push(hop);
-            current_node = node;
-        });
-
-        var hop = {"src" : current_node, "dest" : dest_idx, "tput": 0, "band" : "2g"};
-        if (nodes[dest_idx].role === 'sta_5g') {
-            hop.band = "5g";
-            hop.bw = "bw80";
+            paths.push(hops);
         }
-        hop_calc_tput(hop);
-        hops.push(hop);
-
-        paths.push(hops);
     });
 
     paths.forEach(function (path) {
@@ -243,12 +297,19 @@ function calculate_routes() {
 function test() {
     "use strict";
     nodes.forEach(function (node) {
-        var html_str = "<tr><td>" + node.id +  "</td><td><select onchange=\"change_role(" + node.id + ")\" id=\"role_" + node.id + "\"></select></td>";
-        html_str +=  "<td>";
+        var html_str = "<tr>";
+        html_str += "<td>";
+        html_str += node.id;
+        html_str += "</td>";
+        html_str += "<td>";
+        html_str += "<select onchange=\"change_role(" + node.id + ")\" id=\"role_" + node.id + "\"></select>";
+        html_str += "<select onchange=\"change_plc(" + node.id + ")\" id=\"plc_" + node.id + "\"></select>";
+        html_str += "</td>";
+        html_str += "<td>";
         html_str += "<select onchange=\"change_chain_2g(" + node.id + ")\" id=\"ch_2g_" + node.id + "\"></select>";
         html_str += "<select onchange=\"change_bw_2g(" + node.id + ")\" id=\"bw_2g_" + node.id + "\"></select>";
-        html_str +=  "</td>";
-        html_str +=  "<td>";
+        html_str += "</td>";
+        html_str += "<td>";
         html_str += "<select onchange=\"change_chain_5g( " + node.id + ")\" id=\"ch_5g_" + node.id + "\"></select>";
         html_str += "<select onchange=\"change_bw_5g(" + node.id + ")\" id=\"bw_5g_" + node.id + "\"></select>";
         html_str += "</td></tr>";
@@ -260,6 +321,10 @@ function test() {
         $("#role_" + node.id).append(new Option("STA_2G", "sta_2g"));
         $("#role_" + node.id).append(new Option("STA_5G", "sta_5g"));
         $("#role_" + node.id).val(node.role);
+
+        $("#plc_" + node.id).append(new Option("No PLC", "no_plc"));
+        $("#plc_" + node.id).append(new Option("MIMO PLC", "mimo_plc"));
+        $("#plc_" + node.id).val(node.plc);
 
         $("#ch_2g_" + node.id).append(new Option("1x1", "1x1"));
         $("#ch_2g_" + node.id).append(new Option("2x2", "2x2"));
@@ -278,5 +343,7 @@ function test() {
         $("#ch_5g_" + node.id).append(new Option("2x2", "2x2"));
         $("#ch_5g_" + node.id).append(new Option("3x3", "3x3"));
         $("#ch_5g_" + node.id).val(node.chain_5g);
+        change_role(node.id);
     });
+
 }

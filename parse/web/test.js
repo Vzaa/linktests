@@ -19,7 +19,7 @@ function node_by_id(id) {
     }
 }
 
-function get_test(src, dest, chain_src, chain_dst, band, bw) {
+function get_test_wifi(src, dest, chain_src, chain_dst, band, bw) {
     "use strict";
     if (chain_src === "1x1" && chain_dst === "2x2") {
         chain_dst = "1x1";
@@ -36,6 +36,22 @@ function get_test(src, dest, chain_src, chain_dst, band, bw) {
                 x.chain_dst === chain_dst &&
                 x.band === band &&
                 x.bw === bw
+               );
+    });
+    if (dat.length === 0) {
+        return 0.0001; //avoid divide by zero lol
+    }
+    return dat[0].dat;
+}
+
+function get_test_plc(src, dest) {
+    "use strict";
+    var dat = test_data.filter(function (x) {
+        return (x.src === src &&
+                x.dest === dest &&
+                x.chain_src === chain_src &&
+                x.chain_dst === chain_dst &&
+                x.band === 'mimo_plc'
                );
     });
     if (dat.length === 0) {
@@ -179,15 +195,16 @@ function hop_calc_tput(hop) {
         } else {
             bw = dest_node.bw_2g;
         }
-        dat = get_test(src_node.ip, dest_node.ip, src_node.chain_2g, dest_node.chain_2g, hop.band, bw);
+        dat = get_test_wifi(src_node.ip, dest_node.ip, src_node.chain_2g, dest_node.chain_2g, hop.band, bw);
     } else if (hop.band === "5g") {
         if (src_node.bw_5g < dest_node.bw_5g) {
             bw = src_node.bw_5g;
         } else {
             bw = dest_node.bw_5g;
         }
-        dat = get_test(src_node.ip, dest_node.ip, src_node.chain_5g, dest_node.chain_5g, hop.band, bw);
+        dat = get_test_wifi(src_node.ip, dest_node.ip, src_node.chain_5g, dest_node.chain_5g, hop.band, bw);
     } else if (hop.band === "plc") {
+        dat = get_test_plc(src_node.ip, dest_node.ip);
     }
 
     hop.tput = dat;
@@ -259,12 +276,12 @@ function find_best_route(src_idx, dest_idx, mps) {
                 current_node = route[j];
             }
 
-            var hop = {"src" : current_node, "dest" : dest_idx, "tput": 0, "band" : "2g"};
+            var hop_last = {"src" : current_node, "dest" : dest_idx, "tput": 0, "band" : "2g"};
             if (nodes[dest_idx].role === 'sta_5g') {
-                hop.band = "5g";
+                hop_last.band = "5g";
             }
-            hop_calc_tput(hop);
-            hops.push(hop);
+            hop_calc_tput(hop_last);
+            hops.push(hop_last);
             paths.push(hops);
         }
     });

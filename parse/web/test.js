@@ -1,6 +1,9 @@
 /*jslint browser: true*/
 /*global $, jQuery*/
 
+var g_nodes = new vis.DataSet();
+var g_edges = new vis.DataSet();
+
 var nodes = [
     {"id": 1, "ip": "192.168.2.21", "bw_2g" : "bw40", "bw_5g" : "bw80", "chain_2g" : "2x2", "chain_5g" : "3x3", "plc": "no_plc", "role": "mp"},
     {"id": 2, "ip": "192.168.2.22", "bw_2g" : "bw40", "bw_5g" : "bw80", "chain_2g" : "2x2", "chain_5g" : "3x3", "plc": "no_plc", "role": "gw"},
@@ -8,7 +11,7 @@ var nodes = [
     {"id": 4, "ip": "192.168.2.24", "bw_2g" : "bw40", "bw_5g" : "bw80", "chain_2g" : "2x2", "chain_5g" : "3x3", "plc": "no_plc", "role": "mp"},
     {"id": 5, "ip": "192.168.2.25", "bw_2g" : "bw40", "bw_5g" : "bw80", "chain_2g" : "2x2", "chain_5g" : "3x3", "plc": "no_plc", "role": "sta_5g"},
     {"id": 6, "ip": "192.168.2.26", "bw_2g" : "bw40", "bw_5g" : "bw80", "chain_2g" : "2x2", "chain_5g" : "1x1", "plc": "no_plc", "role": "mp"},
-    {"id": 7, "ip": "192.168.2.27", "bw_2g" : "bw40", "bw_5g" : "bw80", "chain_2g" : "2x2", "chain_5g" : "3x3", "plc": "no_plc", "role": "mp"}
+    {"id": 7, "ip": "192.168.2.27", "bw_2g" : "bw40", "bw_5g" : "bw80", "chain_2g" : "2x2", "chain_5g" : "3x3", "plc": "no_plc", "role": "none"}
 ];
 
 function node_by_id(id) {
@@ -49,8 +52,6 @@ function get_test_plc(src, dest) {
     var dat = test_data.filter(function (x) {
         return (x.src === src &&
                 x.dest === dest &&
-                x.chain_src === chain_src &&
-                x.chain_dst === chain_dst &&
                 x.band === 'mimo_plc'
                );
     });
@@ -58,6 +59,22 @@ function get_test_plc(src, dest) {
         return 0.0001; //avoid divide by zero lol
     }
     return dat[0].dat;
+}
+
+function color_node(id) {
+    "use strict";
+    var role = node_by_id(id).role;
+    if (role === "sta_2g") {
+        g_nodes.update({id: id, color: 'red'});
+    } else if (role === "sta_5g") {
+        g_nodes.update({id: id, color: 'green'});
+    } else if (role === "gw") {
+        g_nodes.update({id: id, color: 'yellow'});
+    } else if (role === "none") {
+        g_nodes.update({id: id, color: 'gray'});
+    } else {
+        g_nodes.update({id: id, color: 'pink'});
+    }
 }
 
 function change_role(id) {
@@ -89,6 +106,7 @@ function change_role(id) {
         $("#bw_5g_" + id).css({"visibility":"visible"});
         $("#plc_" + id).css({"visibility":"visible"});
     }
+    color_node(id);
 }
 
 function change_plc(id) {
@@ -313,7 +331,52 @@ function calculate_routes() {
 
 function test() {
     "use strict";
+    graph_test();
     nodes.forEach(function (node) {
+        color_node(node.id);
+    });
+}
+
+function graph_test() {
+    // create an array with nodes
+    g_nodes.add([
+        {id: 1 , label: '1' , y: -135 , x: 10  , allowedToMoveX: true , allowedToMoveY: true},
+        {id: 2 , label: '2' , y: 72   , x: 200 , allowedToMoveX: true , allowedToMoveY: true},
+        {id: 3 , label: '3' , y: 130  , x: 27 , allowedToMoveX: true , allowedToMoveY: true},
+        {id: 4 , label: '4' , y: 239  , x: -39   , allowedToMoveX: true , allowedToMoveY: true} ,
+        {id: 5 , label: '5' , y: 268  , x: -372   , allowedToMoveX: true , allowedToMoveY: true},
+        {id: 6 , label: '6' , y: 73   , x: -184 , allowedToMoveX: true , allowedToMoveY: true},
+        {id: 7 , label: '7' , y: -136 , x: -230 , allowedToMoveX: true , allowedToMoveY: true},
+    ]);
+
+    //g_edges.add([{from: 2, to: 1}]);
+    g_edges.add([]);
+
+    // create a network
+    var container = document.getElementById('mynetwork');
+    var data = {
+        nodes: g_nodes,
+        edges: g_edges
+    };
+
+    var options = {
+        //dragNetwork: false,
+        //dragNodes: false,
+        physics: {barnesHut: {gravitationalConstant: 0, centralGravity: 0, springConstant: 0}},
+        zoomable: false,
+    };
+    var network = new vis.Network(container, data, options);
+    network.on('dragEnd', function() {
+        this.storePositions();
+        console.log(JSON.stringify(this.getPositions()));
+    });
+
+    network.on('select', function(properties) {
+        var node = node_by_id(parseInt(properties.nodes[0]));
+        if (properties.nodes.length === 0) {
+            $("#aptable").html("");
+            return;
+        }
         var html_str = "<tr>";
         html_str += "<td>";
         html_str += node.id;
@@ -331,7 +394,8 @@ function test() {
         html_str += "<select onchange=\"change_bw_5g(" + node.id + ")\" id=\"bw_5g_" + node.id + "\"></select>";
         html_str += "</td></tr>";
 
-        $("#aptable").append(html_str);
+        //$("#aptable").append(html_str);
+        $("#aptable").html(html_str);
         $("#role_" + node.id).append(new Option("None", "none"));
         $("#role_" + node.id).append(new Option("MP", "mp"));
         $("#role_" + node.id).append(new Option("GW", "gw"));
@@ -362,5 +426,4 @@ function test() {
         $("#ch_5g_" + node.id).val(node.chain_5g);
         change_role(node.id);
     });
-
 }

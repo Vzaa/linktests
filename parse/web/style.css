@@ -12,3 +12,16 @@ textarea {
 select {
     width:40%;
 }
+
+#mynetwork {
+    position:relative;
+    width: 80%;
+    height: 600px;
+    /*border: 1px solid lightgray;*/
+}
+
+canvas {
+    background-image: url('./ev.jpg');
+    background-repeat: no-repeat;
+    background-position: center;
+}

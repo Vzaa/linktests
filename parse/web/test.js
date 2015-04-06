@@ -237,13 +237,31 @@ function calculate_path_cost(path) {
     return cost;
 }
 
+function pretty_num(num) {
+    var val = Math.round(num * 100) / 100;
+    return val.toString();
+}
+
 function path_to_str(path) {
     "use strict";
     var res_str = "";
+    var cost = 0;
     path.forEach(function (hop) {
-        res_str += " (" + nodes[hop.src].id + " -> " + nodes[hop.dest].id + " , " + Math.round(hop.tput * 100) / 100 + ")";
+        cost += 1 / hop.tput;
+        res_str += " (" + nodes[hop.src].id + " -> " + nodes[hop.dest].id + " , " + pretty_num(hop.tput) + ")";
     });
+
+    res_str = pretty_num(1 / cost) + " Mbps " + res_str;
     return res_str;
+}
+
+function path_to_edges(path) {
+    "use strict";
+    var new_edges = [];
+    path.forEach(function (hop) {
+        new_edges.push({from: nodes[hop.src].id, to: nodes[hop.dest].id, label: pretty_num(hop.tput)});
+    });
+    g_edges.add(new_edges);
 }
 
 function nth_bit(in_val, n) {
@@ -321,9 +339,12 @@ function calculate_routes() {
 
     var disp_str = "";
 
+    g_edges.clear();
+
     pairs.forEach(function (pair) {
         var best = find_best_route(pair.src, pair.dest, mps);
         disp_str += nodes[pair.src].id + " -> " + nodes[pair.dest].id + " ==> " + path_to_str(best) + "\n";
+        path_to_edges(best);
         console.log(best);
     });
     $("#result").val(disp_str);
@@ -362,8 +383,13 @@ function graph_test() {
     var options = {
         //dragNetwork: false,
         //dragNodes: false,
+        edges: {
+            color: 'green',
+            style: 'arrow',
+            width: 4
+        },
         physics: {barnesHut: {gravitationalConstant: 0, centralGravity: 0, springConstant: 0}},
-        zoomable: false,
+        zoomable: false
     };
     var network = new vis.Network(container, data, options);
     network.on('dragEnd', function() {

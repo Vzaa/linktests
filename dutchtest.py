@@ -115,11 +115,11 @@ def run_test(ap2, port, name, direction='down', band=5, channel=36, ssid='', cha
 
     time.sleep(3)
     print 'ping tests...'
-    os.system('arp -d ' + SINKIP)
-    os.system('arp -d ' + ap2.hostname)
 
     ret = 1
     for e in xrange(10):
+        os.system('arp -d ' + SINKIP)
+        os.system('arp -d ' + ap2.hostname)
         ret = os.system('ping -c 1 ' + SINKIP)
         if ret == 0:
             break
@@ -169,11 +169,11 @@ def log_rssi(ap2, port, name, band=5, channel=36, ssid=''):
 
     time.sleep(3)
     print 'ping tests...'
-    os.system('arp -d ' + SINKIP)
-    os.system('arp -d ' + ap2.hostname)
 
     ret = 1
     for e in xrange(10):
+        os.system('arp -d ' + SINKIP)
+        os.system('arp -d ' + ap2.hostname)
         ret = os.system('ping -c 1 ' + SINKIP)
         if ret == 0:
             break

@@ -21,7 +21,7 @@ DUMMY_VLAN = 3
 SINK_VLAN = 4
 
 
-def run_tput(cli_ip, serv_ip, protocol='udp', port=4444, duration=180, udp_bw=600, tcp_pairs=1, band=5, filename_base='/tmp/x', sw=None):
+def run_tput(cli_ip, serv_ip, protocol='udp', port=4444, duration=10, udp_bw=600, tcp_pairs=1, band=5, filename_base='/tmp/x', sw=None):
     dev_log = []
     sw.add_ports_to_vlan(CONTROL_VLAN, [SINKPORT])
     os.system('arp -d ' + SINKIP)
@@ -251,13 +251,14 @@ def main():
         sw.add_ports_to_vlan(port + 10, [port])
 
     ap_list = []
-    ap_list.append(ApNode(hostname='192.168.2.21', switchport=3, sw=sw))
-    ap_list.append(ApNode(hostname='192.168.2.22', switchport=4, sw=sw))
-    ap_list.append(ApNode(hostname='192.168.2.23', switchport=5, sw=sw))
-    ap_list.append(ApNode(hostname='192.168.2.24', switchport=6, sw=sw))
-    ap_list.append(ApNode(hostname='192.168.2.25', switchport=7, sw=sw))
-    ap_list.append(ApNode(hostname='192.168.2.26', switchport=8, sw=sw))
-    ap_list.append(ApNode(hostname='192.168.2.27', switchport=9, sw=sw))
+    ap_list.append(ApNode(hostname='192.168.2.101', switchport=5, sw=sw))
+    ap_list.append(ApNode(hostname='192.168.2.102', switchport=3, sw=sw))
+    ap_list.append(ApNode(hostname='192.168.2.103', switchport=11, sw=sw))
+    ap_list.append(ApNode(hostname='192.168.2.104', switchport=9, sw=sw))
+    #ap_list.append(ApNode(hostname='192.168.2.105', switchport=8, sw=sw))
+    ap_list.append(ApNode(hostname='192.168.2.106', switchport=7, sw=sw))
+    ap_list.append(ApNode(hostname='192.168.2.107', switchport=6, sw=sw))
+    ap_list.append(ApNode(hostname='192.168.2.108', switchport=4, sw=sw))
 
     #put the sink to sink vlan
     sw.add_ports_to_vlan(SINK_VLAN, [SINKPORT])
@@ -266,7 +267,7 @@ def main():
     #sw.add_ports_to_vlan(CONTROL_VLAN, [3])
 
     test_aps = [
-            (11, 6, 'domates_a_2', 44, 'domates_a_5'),
+#            (11, 6, 'domates_a_2', 44, 'domates_a_5'),
             (12, 6, 'domates_b_2', 44, 'domates_b_5'),
             ]
 

@@ -86,6 +86,31 @@ def get_info_from_filename(filename):
         info['type'] = parts[9].split('.')[0]
         info['link'] = 'na'
         info['medium'] = 'plc'
+    elif len(parts) == 12:
+        #15_04_15_08_42_52_192.168.2.102_2g_ch6_12_up_cli.log
+        info['filename'] = filename
+        info['testid'] = ''.join(parts[0:6])
+        info['src'] = parts[6]
+        info['band'] = parts[7]
+        info['channel'] = parts[8]
+        info['port'] = parts[9]
+        info['dest'] = parts[9]
+        info['direction'] = parts[10]
+        info['type'] = parts[11].split('.')[0]
+        info['link'] = 'na'
+        info['medium'] = 'wifi'
+    elif len(parts) == 11:
+        #15_04_15_08_42_52_192.168.2.102_2g_ch6_12_up_cli.log
+        info['filename'] = filename
+        info['testid'] = ''.join(parts[0:6])
+        info['src'] = parts[6]
+        info['band'] = parts[7]
+        info['channel'] = parts[8]
+        info['port'] = parts[9]
+        info['dest'] = parts[9]
+        info['type'] = parts[10].split('.')[0]
+        info['link'] = 'na'
+        info['medium'] = 'wifi'
     else:
         print filename, len(parts)
         return None
@@ -118,9 +143,12 @@ def gen_test_dict(dirname, filename):
         test['dat'] = get_data_from_file(dirname + test['filename'])
         #test['dat_avg'] = sum([tput for secs, tput in test['dat']]) / len(test['dat'])
         test['dat'] = sum([tput for secs, tput in test['dat']]) / len(test['dat'])
-    elif test['type'] == 'dev' and test['medium'] == 'wifi':
+    elif (test['type'] == 'dev' or test['type'] == 'rssi') and test['medium'] == 'wifi':
         test['rssi'] = get_rssi_vals(dirname + test['filename'])
-        test['rssi'] = sum(test['rssi']) / len(test['rssi'])
+        try:
+            test['rssi'] = sum(test['rssi']) / len(test['rssi'])
+        except ZeroDivisionError:
+            test['rssi'] = 0
     return test
 
 
@@ -171,7 +199,18 @@ def get_unique_nodes(tests, testid, medium):
             test['medium'] == medium]
     for test in filtered:
         nodes.add(test['src'])
-        nodes.add(test['dest'])
+        #nodes.add(test['dest'])
+    return list(nodes)
+
+def get_unique_ports(tests, testid, medium):
+    "return a list of unique nodes in a tests list"
+    nodes = set()
+    filtered = [test for test in tests
+            if test['testid'] == testid and
+            test['medium'] == medium]
+    for test in filtered:
+        nodes.add(test['port'])
+        #nodes.add(test['dest'])
     return list(nodes)
 
 

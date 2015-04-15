@@ -91,14 +91,17 @@ def run_tput(cli_ip, serv_ip, protocol='udp', port=4444, duration=10, udp_bw=600
             writer.write(item.strip() + '\n')
 
 
-def run_test(ap2, port, direction='down', band=5, channel=36, ssid=''):
+def run_test(ap2, port, direction='down', band=5, channel=36, ssid='', chains=None):
     sw = ap2.sw
     #config ap2
     ap2.to_control_vlan()
     ap2.enable_radio(band=band)
     ap2.arp_clean()
 
-    ap2.sta_mode(band=band, ssid=ssid)
+    cfg = None
+    if chains is not None:
+        cfg = ap2.ap_cfg(channel, band=band, chains=chains)
+    ap2.sta_mode(extra_cmds=cfg, band=band, ssid=ssid)
     time.sleep(3)
     ap2.to_idle_vlan()
 
@@ -222,13 +225,13 @@ def reset_ap_states(ap_list):
 
 
 
-def test_apsta(ap_list, port, band, channel, ssid):
+def test_apsta(ap_list, port, band, channel, ssid, chains=None):
     for ap1 in ap_list:
         print 'Wifi {} {}'.format(band, ap1.hostname)
         while True:
             try:
-                run_test(ap1, port, direction='down', band=band, channel=channel, ssid=ssid)
-                run_test(ap1, port, direction='up', band=band, channel=channel, ssid=ssid)
+                run_test(ap1, port, chains=chains, direction='down', band=band, channel=channel, ssid=ssid)
+                run_test(ap1, port, chains=chains, direction='up', band=band, channel=channel, ssid=ssid)
                 log_rssi(ap1, port, band=band, channel=channel, ssid=ssid)
                 break
             except pexpect.EOF:
@@ -274,7 +277,7 @@ def main():
     #symmetric 2g ap-sta tests
     for (port, ch_2g, ssid_2g, ch_5g, ssid_5g) in test_aps:
         test_apsta(ap_list, port, 2, ch_2g, ssid_2g)
-        test_apsta(ap_list, port, 5, ch_5g, ssid_5g)
+        test_apsta(ap_list, port, 5, ch_5g, ssid_5g, chains='2x2')
 
 if __name__ == '__main__':
     main()

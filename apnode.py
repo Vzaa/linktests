@@ -39,17 +39,17 @@ class ApNode(object):
                    passwd=mydict['passwd'],
                    macs={2: mydict['mac2g'], 5: mydict['mac5g']})
 
-    def ap_cfg(self, channel, bw, chains, band=5):
+    def ap_cfg(self, channel, bw=0, chains='3x3', band=5):
         ifname = self.ifs[band]
         cmd_list = []
 
-        if band == 5:
+        if band == 5 and bw != 0:
             cmd_list.append(wl_cmd(ifname, 'chanspec ' + str(channel) + '/' + str(bw)))
             cmd_list.append(wl_cmd(ifname, 'radar 0'))
             cmd_list.append(wl_cmd(ifname, 'spect 0'))
             cmd_list.append(wl_cmd(ifname, 'dfs_preism 1'))
             cmd_list.append(wl_cmd(ifname, 'dfs_postism 1'))
-        else:
+        elif bw != 0:
             cmd_list.append(wl_cmd(ifname, 'chanspec -s 0 -b 2 -c ' + str(channel) + ' -w ' + str(bw)))
 
         if chains == '3x3':

@@ -21,7 +21,7 @@ DUMMY_VLAN = 3
 SINK_VLAN = 4
 
 
-def run_tput(cli_ip, serv_ip, protocol='udp', port=4444, duration=10, udp_bw=600, tcp_pairs=1, band=5, filename_base='/tmp/x', sw=None):
+def run_tput(cli_ip, serv_ip, protocol='udp', port=4444, duration=180, udp_bw=600, tcp_pairs=1, band=5, filename_base='/tmp/x', sw=None):
     dev_log = []
     sw.add_ports_to_vlan(CONTROL_VLAN, [SINKPORT])
     os.system('arp -d ' + SINKIP)
@@ -270,8 +270,9 @@ def main():
     #sw.add_ports_to_vlan(CONTROL_VLAN, [3])
 
     test_aps = [
-#            (11, 6, 'domates_a_2', 44, 'domates_a_5'),
             (12, 6, 'domates_b_2', 44, 'domates_b_5'),
+            (13, 6, 'patates2', 44, 'patates5'),
+            (14, 6, 'patlican2', 44, 'patlican5'),
             ]
 
     #symmetric 2g ap-sta tests

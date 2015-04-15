@@ -5,7 +5,7 @@ import parse as p
 
 def main():
     "main"
-    dirname = '../logs.tmp/'
+    dirname = '../logs.tmp2/'
     tests = p.parse_dir(dirname)
     testids = p.get_unique_testids(tests)
 

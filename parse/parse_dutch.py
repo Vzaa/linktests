@@ -5,7 +5,7 @@ import parse as p
 
 def main():
     "main"
-    dirname = '../logs.tmp2/'
+    dirname = '../logs/'
     tests = p.parse_dir(dirname)
     testids = p.get_unique_testids(tests)
 
@@ -44,7 +44,22 @@ def main():
                     except KeyError:
                         continue
 
-                    print '\t%s %s %.2f %.2f' % (node, rssi_dat[0]['rssi'], test_down[0]['dat'], test_up[0]['dat'])
+                    if len(rssi_dat) == 0:
+                        rssi = 0
+                    else:
+                        rssi = rssi_dat[0]['rssi']
+
+                    if len(test_down) == 0:
+                        test_down = 0
+                    else:
+                        test_down = test_down[0]['dat']
+
+                    if len(test_up) == 0:
+                        test_up = 0
+                    else:
+                        test_up = test_up[0]['dat']
+
+                    print '\t%s %s %.2f %.2f' % (node, rssi, test_down, test_up)
 
 
 

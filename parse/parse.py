@@ -142,7 +142,10 @@ def gen_test_dict(dirname, filename):
     if test['type'] == 'serv' or test['type'] == 'cli':
         test['dat'] = get_data_from_file(dirname + test['filename'])
         #test['dat_avg'] = sum([tput for secs, tput in test['dat']]) / len(test['dat'])
-        test['dat'] = sum([tput for secs, tput in test['dat']]) / len(test['dat'])
+        try:
+            test['dat'] = sum([tput for secs, tput in test['dat']]) / len(test['dat'])
+        except ZeroDivisionError:
+            test['dat'] = 0
     elif (test['type'] == 'dev' or test['type'] == 'rssi') and test['medium'] == 'wifi':
         test['rssi'] = get_rssi_vals(dirname + test['filename'])
         try:

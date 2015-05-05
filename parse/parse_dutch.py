@@ -5,7 +5,7 @@ import parse as p
 
 def main():
     "main"
-    dirname = '../logs/'
+    dirname = '../logs.200415.newfw3/'
     tests = p.parse_dir(dirname)
     testids = p.get_unique_testids(tests)
 
@@ -14,6 +14,8 @@ def main():
     for testid in testids:
         nodes = sorted(p.get_unique_nodes(tests, testid, 'wifi'))
         ports = sorted(p.get_unique_ports(tests, testid, 'wifi'))
+
+        print testid
 
         for port in ports:
             print port

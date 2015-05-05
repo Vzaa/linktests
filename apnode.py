@@ -185,11 +185,15 @@ class ApNode(object):
         mac = lines[-2].strip()
         return mac
 
-    def get_rssi_nrate(self, dest_mac, band=5):
+    def get_rssi_nrate(self, dest_mac, ccachan=0, band=5):
         ifname = self.ifs[band]
         cmd_list = []
         cmd_list.append(wl_cmd(ifname, 'nrate'))
         cmd_list.append(wl_cmd(ifname, 'rssi ' + dest_mac))
+        if ccachan != 0:
+            cmd_list.append(wl_cmd(ifname, 'rm_req cca -c %s -d 1000' % ccachan))
+            cmd_list.append('sleep 2')
+            cmd_list.append(wl_cmd(ifname, 'rm_rep'))
         lines = self.run_command(cmd_list)
         return lines
 

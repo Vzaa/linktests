@@ -21,7 +21,7 @@ DUMMY_VLAN = 3
 SINK_VLAN = 4
 
 
-def run_tput(cli_ip, serv_ip, protocol='udp', port=4444, duration=180, udp_bw=600, tcp_pairs=1, band=5, filename_base='/tmp/x', sw=None):
+def run_tput(cli_ip, serv_ip, protocol='udp', port=4444, duration=200, udp_bw=600, tcp_pairs=1, band=5, filename_base='/tmp/x', sw=None):
     dev_log = []
     sw.add_ports_to_vlan(CONTROL_VLAN, [SINKPORT])
     os.system('arp -d ' + SINKIP)
@@ -180,8 +180,8 @@ def log_rssi(ap2, port, name, band=5, channel=36, ssid=''):
         time.sleep(1)
 
     dev_log = []
-    dev_log += ap2.get_rssi_nrate(' ', band=band)
-    dev_log += ap2.get_rssi_nrate(' ', band=band)
+    dev_log += ap2.get_rssi_nrate(' ', ccachan=channel, band=band)
+    dev_log += ap2.get_rssi_nrate(' ', ccachan=channel, band=band)
 
     filename_base = '{}{}_{}_{}g_ch{}_{}'.format(TARGET_DIR, TIMESTAMP, ap2.hostname, band, channel, name)
     with open(filename_base + '_rssi.log', 'w') as writer:
@@ -254,13 +254,13 @@ def main():
         sw.add_ports_to_vlan(port + 10, [port])
 
     ap_list = []
+    ap_list.append(ApNode(hostname='192.168.2.107', switchport=6, sw=sw))
+    ap_list.append(ApNode(hostname='192.168.2.105', switchport=8, sw=sw))
+    ap_list.append(ApNode(hostname='192.168.2.106', switchport=7, sw=sw))
     ap_list.append(ApNode(hostname='192.168.2.101', switchport=5, sw=sw))
     ap_list.append(ApNode(hostname='192.168.2.102', switchport=3, sw=sw))
     ap_list.append(ApNode(hostname='192.168.2.103', switchport=11, sw=sw))
     ap_list.append(ApNode(hostname='192.168.2.104', switchport=9, sw=sw))
-    #ap_list.append(ApNode(hostname='192.168.2.105', switchport=8, sw=sw))
-    ap_list.append(ApNode(hostname='192.168.2.106', switchport=7, sw=sw))
-    ap_list.append(ApNode(hostname='192.168.2.107', switchport=6, sw=sw))
     ap_list.append(ApNode(hostname='192.168.2.108', switchport=4, sw=sw))
 
     #put the sink to sink vlan
@@ -271,14 +271,16 @@ def main():
 
     test_aps = [
             (12, 6, 'domates_b_2', 44, 'domates_b_5', 'dutch'),
-            (12, 6, 'patates2', 44, 'patates5', 'netgear'),
+            (12, 6, 'patates2', 44, 'papates5', 'netgear'),
             (12, 6, 'patlican2', 44, 'patlican5', 'asus'),
+            (12, 6, 'biber2', 100, 'biber5', '4920'),
             ]
 
     #symmetric 2g ap-sta tests
     for (port, ch_2g, ssid_2g, ch_5g, ssid_5g, name) in test_aps:
+        #test_apsta(ap_list, port, 5, ch_5g, ssid_5g, name + '2x2', chains='2x2')
+        test_apsta(ap_list, port, 5, ch_5g, ssid_5g, name + '3x3', chains='3x3')
         test_apsta(ap_list, port, 2, ch_2g, ssid_2g, name)
-        test_apsta(ap_list, port, 5, ch_5g, ssid_5g, name, chains='2x2')
 
 if __name__ == '__main__':
     main()

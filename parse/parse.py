@@ -3,8 +3,8 @@ import os
 import re
 import json
 
-import matplotlib.pyplot as plt
-import numpy as np
+#import matplotlib.pyplot as plt
+#import numpy as np
 
 
 def parse_iperf(lines):
@@ -202,6 +202,17 @@ def get_unique_nodes(tests, testid, medium):
             test['medium'] == medium]
     for test in filtered:
         nodes.add(test['src'])
+        #nodes.add(test['dest'])
+    return list(nodes)
+
+def get_unique_bands(tests, testid, medium):
+    "return a list of unique nodes in a tests list"
+    nodes = set()
+    filtered = [test for test in tests
+            if test['testid'] == testid and
+            test['medium'] == medium]
+    for test in filtered:
+        nodes.add(test['band'])
         #nodes.add(test['dest'])
     return list(nodes)
 

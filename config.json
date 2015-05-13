@@ -1,0 +1,25 @@
+{
+    "sta_list" : [
+        {"hostname" : "192.168.2.105", "switchport" : 8},
+        {"hostname" : "192.168.2.106", "switchport" : 7},
+        {"hostname" : "192.168.2.104", "switchport" : 9},
+        {"hostname" : "192.168.2.107", "switchport" : 6},
+        {"hostname" : "192.168.2.101", "switchport" : 5},
+        {"hostname" : "192.168.2.108", "switchport" : 4},
+        {"hostname" : "192.168.2.102", "switchport" : 3},
+        {"hostname" : "192.168.2.103", "switchport" : 11}
+    ],
+
+    "ap_list" : [
+        {"name" : "4920mesh", "ssid" : "patlican5", "switchport" : 12, "channel" : 100, "band" : 5},
+        {"name" : "4920mesh", "ssid" : "patlican2", "switchport" : 12, "channel" : 6, "band" : 2}
+    ],
+
+    "tests" : [
+        {"protocol" : "tcp", "chains" : "3x3", "band" : 5},
+        {"protocol" : "tcp", "chains" : "2x2", "band" : 5},
+        {"protocol" : "tcp", "chains" : "1x1", "band" : 5},
+        {"protocol" : "tcp", "chains" : "2x2", "band" : 2}
+    ]
+}
+

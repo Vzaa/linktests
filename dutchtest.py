@@ -1,4 +1,5 @@
 import os
+import json
 import time
 import pexpect
 import requests
@@ -91,7 +92,7 @@ def run_tput(cli_ip, serv_ip, protocol='udp', port=4444, duration=60, udp_bw=600
             writer.write(item.strip() + '\n')
 
 
-def run_test(ap2, port, name, direction='down', band=5, channel=36, ssid='', chains=None):
+def run_test(ap2, port, name, direction='down', band=5, channel=36, ssid='', chains=None, protocol='tcp'):
     sw = ap2.sw
     #config ap2
     ap2.to_control_vlan()
@@ -131,7 +132,7 @@ def run_test(ap2, port, name, direction='down', band=5, channel=36, ssid='', cha
         while True:
             try:
                 filename_base = '{}{}_{}_{}g_ch{}_{}_{}'.format(TARGET_DIR, TIMESTAMP, ap2.hostname, band, channel, name, direction)
-                run_tput(SOURCEIP, SINKIP, protocol='tcp', band=band, filename_base=filename_base, sw=ap2.sw)
+                run_tput(SOURCEIP, SINKIP, protocol=protocol, band=band, filename_base=filename_base, sw=ap2.sw)
             except requests.Timeout:
                 continue
             except requests.ConnectionError:
@@ -225,13 +226,13 @@ def reset_ap_states(ap_list):
 
 
 
-def test_apsta(ap_list, port, band, channel, ssid, name, chains=None):
+def test_apsta(ap_list, port, band, channel, ssid, name, chains=None, protocol='tcp'):
     for ap1 in ap_list:
         print 'Wifi {} {}'.format(band, ap1.hostname)
         while True:
             try:
-                run_test(ap1, port, name, chains=chains, direction='down', band=band, channel=channel, ssid=ssid)
-                #run_test(ap1, port, name, chains=chains, direction='up', band=band, channel=channel, ssid=ssid)
+                run_test(ap1, port, name, chains=chains, direction='down', band=band, channel=channel, ssid=ssid, protocol=protocol)
+                #run_test(ap1, port, name, chains=chains, direction='up', band=band, channel=channel, ssid=ssid, protocol=protocol)
                 log_rssi(ap1, port, name, band=band, channel=channel, ssid=ssid)
                 break
             except pexpect.EOF:
@@ -256,15 +257,13 @@ def main():
     #sw.add_ports_to_vlan(CONTROL_VLAN, [12])
     #quit()
 
+    with open('config.json') as fds:
+        conf = json.load(fds)
+
     ap_list = []
-    ap_list.append(ApNode(hostname='192.168.2.105', switchport=8, sw=sw))
-    ap_list.append(ApNode(hostname='192.168.2.106', switchport=7, sw=sw))
-    ap_list.append(ApNode(hostname='192.168.2.104', switchport=9, sw=sw))
-    ap_list.append(ApNode(hostname='192.168.2.107', switchport=6, sw=sw))
-    ap_list.append(ApNode(hostname='192.168.2.101', switchport=5, sw=sw))
-    ap_list.append(ApNode(hostname='192.168.2.108', switchport=4, sw=sw))
-    ap_list.append(ApNode(hostname='192.168.2.102', switchport=3, sw=sw))
-    ap_list.append(ApNode(hostname='192.168.2.103', switchport=11, sw=sw))
+
+    for sta in conf['sta_list']:
+        ap_list.append(ApNode(hostname=sta['hostname'], switchport=sta['switchport'], sw=sw))
 
     #put the sink to sink vlan
     sw.add_ports_to_vlan(SINK_VLAN, [SINKPORT])
@@ -272,20 +271,11 @@ def main():
     reset_ap_states(ap_list)
     #sw.add_ports_to_vlan(CONTROL_VLAN, [3])
 
-    test_aps = [
-            #(12, 6, 'domates_b_2', 44, 'domates_b_5', 'dutch'),
-            #(12, 6, 'patates2', 44, 'papates5', 'netgear'),
-            (12, 6, 'patlican2', 100, 'patlican5', '4920mesh'),
-            #(12, 6, 'patlican2', 100, 'patlican5', '4820mesh'),
-            #(12, 6, 'biber2', 100, 'biber5', '4920'),
-            ]
-
-    #symmetric 2g ap-sta tests
-    for (port, ch_2g, ssid_2g, ch_5g, ssid_5g, name) in test_aps:
-        test_apsta(ap_list, port, 5, ch_5g, ssid_5g, name + '3x3', chains='3x3')
-        #test_apsta(ap_list, port, 5, ch_5g, ssid_5g, name + '2x2', chains='2x2')
-        #test_apsta(ap_list, port, 5, ch_5g, ssid_5g, name + '1x1', chains='1x1')
-        #test_apsta(ap_list, port, 2, ch_2g, ssid_2g, name)
+    for test in conf['tests']:
+        for ap in conf['ap_list']:
+            if ap['band'] != test['band']:
+                continue
+            test_apsta(ap_list, ap['port'], ap['band'], ap['channel'], ap['ssid'], ap['name'] + test['chains'], chains=test['chains'], protocol=test['protocol'])
 
 if __name__ == '__main__':
     main()

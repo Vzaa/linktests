@@ -275,7 +275,7 @@ def main():
         for ap in conf['ap_list']:
             if ap['band'] != test['band']:
                 continue
-            test_apsta(ap_list, ap['port'], ap['band'], ap['channel'], ap['ssid'], ap['name'] + test['chains'], chains=test['chains'], protocol=test['protocol'])
+            test_apsta(ap_list, ap['switchport'], ap['band'], ap['channel'], ap['ssid'], ap['name'] + test['chains'], chains=test['chains'], protocol=test['protocol'])
 
 if __name__ == '__main__':
     main()

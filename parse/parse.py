@@ -49,10 +49,10 @@ def get_info_from_filename(filename):
         info['bw'] = parts[10]
         info['chain_src'] = parts[11]
         info['chain_dst'] = parts[12]
-        info['type'] = parts[13].split('.')[0]
-        info['link'] = parts[14]
+        info['type'] = parts[14].split('.')[0]
+        info['link'] = parts[13]
         info['medium'] = 'wifi'
-    if len(parts) == 14:
+    elif len(parts) == 14:
         info['filename'] = filename
         info['testid'] = ''.join(parts[0:6])
         info['src'] = parts[6]
@@ -236,7 +236,7 @@ def plot_heatmap(mat, filename, dirname, testid, vmin=0, vmax=600):
     #plt.show()
     #exit()
 
-    plt.savefig('%s/../plots/%s_%s.png' % (dirname, testid, filename))
+    plt.savefig('%s/../plots/%s/%s.png' % (dirname, testid, filename))
 
 def get_dat_matrix(tests, testid, nodes, band, bw, chain_src, chain_dst, medium='wifi'):
     mat = []
@@ -269,7 +269,7 @@ def get_rssi_mat(tests, testid, nodes, band, bw, chain_src, chain_dst):
 
 def main():
     "main"
-    dirname = './5th_floor_logs/'
+    dirname = 'logs/'
     tests = parse_dir(dirname)
     testids = get_unique_testids(tests)
 
@@ -287,6 +287,10 @@ def main():
 
 
     for testid in testids:
+        try:
+            os.mkdir('%s/../plots/%s/'%(dirname, testid))
+        except OSError:
+            pass
         nodes = sorted(get_unique_nodes(tests, testid, 'wifi'))
         for bw in bw_5g:
             for (chain_src, chain_dst) in ch_5g:

@@ -3,8 +3,8 @@ import os
 import re
 import json
 
-#import matplotlib.pyplot as plt
-#import numpy as np
+import matplotlib.pyplot as plt
+import numpy as np
 
 
 def parse_iperf(lines):
@@ -202,7 +202,18 @@ def get_unique_nodes(tests, testid, medium):
             test['medium'] == medium]
     for test in filtered:
         nodes.add(test['src'])
-        #nodes.add(test['dest'])
+        nodes.add(test['dest'])
+    return list(nodes)
+
+def get_unique_chains(tests, testid, band):
+    "return a list of unique chains in a tests list"
+    nodes = set()
+    filtered = [test for test in tests
+            if test['testid'] == testid and
+            test['medium'] == 'wifi' and
+            test['band'] == band ]
+    for test in filtered:
+        nodes.add((test['chain_src'], test['chain_dst']))
     return list(nodes)
 
 def get_unique_bands(tests, testid, medium):
@@ -284,13 +295,15 @@ def main():
     tests = parse_dir(dirname)
     testids = get_unique_testids(tests)
 
+    wifi_tests = [a for a in tests if a['medium'] == 'wifi']
+    print json.dumps(wifi_tests, indent=4)
+    # quit()
+
 
     #ch_5g = [('3x3', '3x3'), ('2x2', '2x2'), ('1x1', '1x1')]
     #ch_2g = [('2x2', '2x2'), ('1x1', '1x1')]
     #ch_2g = [('3x3', '3x3'), ('2x2', '2x2'), ('1x1', '1x1')]
 
-    ch_5g = [('3x3', '3x3'), ('2x2', '2x2'), ('1x1', '1x1'), ('3x3', '2x2'), ('3x3', '1x1'), ('2x2', '1x1')]
-    ch_2g = [('2x2', '2x2'), ('1x1', '1x1'), ('2x2', '1x1')]
     bw_2g = ['bw20', 'bw40']
     bw_5g = ['bw20', 'bw40', 'bw80']
 
@@ -303,6 +316,9 @@ def main():
         except OSError:
             pass
         nodes = sorted(get_unique_nodes(tests, testid, 'wifi'))
+        ch_5g = sorted(get_unique_chains(tests, testid, '5g'))
+        ch_2g = sorted(get_unique_chains(tests, testid, '2g'))
+
         for bw in bw_5g:
             for (chain_src, chain_dst) in ch_5g:
                 for linktype in linktypes:
